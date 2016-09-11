@@ -32,7 +32,6 @@ int main()
     
     // Initialize GPIO for BTN1 and LED1
     TRISGSET = 0xC0;     // For BTN1: configure PortG bit for input
-    //TRISGSET = 0x80;
     TRISGCLR = 0xF000;   // For LED1: configure PortG pin for output
     ODCGCLR  = 0xF000;   // For LED1: configure as normal output (not open drain)
 
