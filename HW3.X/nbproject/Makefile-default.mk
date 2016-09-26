@@ -51,17 +51,17 @@ OBJECTDIR=build/${CND_CONF}/${IMAGE_TYPE}
 DISTDIR=dist/${CND_CONF}/${IMAGE_TYPE}
 
 # Source Files Quoted if spaced
-SOURCEFILES_QUOTED_IF_SPACED=ChrFont0.c FillPat.c OledChar.c OledGrph.c PmodOLED.c delay.c main.c hw3.c
+SOURCEFILES_QUOTED_IF_SPACED=ChrFont0.c FillPat.c OledChar.c OledGrph.c PmodOLED.c delay.c main.c
 
 # Object Files Quoted if spaced
-OBJECTFILES_QUOTED_IF_SPACED=${OBJECTDIR}/ChrFont0.o ${OBJECTDIR}/FillPat.o ${OBJECTDIR}/OledChar.o ${OBJECTDIR}/OledGrph.o ${OBJECTDIR}/PmodOLED.o ${OBJECTDIR}/delay.o ${OBJECTDIR}/main.o ${OBJECTDIR}/hw3.o
-POSSIBLE_DEPFILES=${OBJECTDIR}/ChrFont0.o.d ${OBJECTDIR}/FillPat.o.d ${OBJECTDIR}/OledChar.o.d ${OBJECTDIR}/OledGrph.o.d ${OBJECTDIR}/PmodOLED.o.d ${OBJECTDIR}/delay.o.d ${OBJECTDIR}/main.o.d ${OBJECTDIR}/hw3.o.d
+OBJECTFILES_QUOTED_IF_SPACED=${OBJECTDIR}/ChrFont0.o ${OBJECTDIR}/FillPat.o ${OBJECTDIR}/OledChar.o ${OBJECTDIR}/OledGrph.o ${OBJECTDIR}/PmodOLED.o ${OBJECTDIR}/delay.o ${OBJECTDIR}/main.o
+POSSIBLE_DEPFILES=${OBJECTDIR}/ChrFont0.o.d ${OBJECTDIR}/FillPat.o.d ${OBJECTDIR}/OledChar.o.d ${OBJECTDIR}/OledGrph.o.d ${OBJECTDIR}/PmodOLED.o.d ${OBJECTDIR}/delay.o.d ${OBJECTDIR}/main.o.d
 
 # Object Files
-OBJECTFILES=${OBJECTDIR}/ChrFont0.o ${OBJECTDIR}/FillPat.o ${OBJECTDIR}/OledChar.o ${OBJECTDIR}/OledGrph.o ${OBJECTDIR}/PmodOLED.o ${OBJECTDIR}/delay.o ${OBJECTDIR}/main.o ${OBJECTDIR}/hw3.o
+OBJECTFILES=${OBJECTDIR}/ChrFont0.o ${OBJECTDIR}/FillPat.o ${OBJECTDIR}/OledChar.o ${OBJECTDIR}/OledGrph.o ${OBJECTDIR}/PmodOLED.o ${OBJECTDIR}/delay.o ${OBJECTDIR}/main.o
 
 # Source Files
-SOURCEFILES=ChrFont0.c FillPat.c OledChar.c OledGrph.c PmodOLED.c delay.c main.c hw3.c
+SOURCEFILES=ChrFont0.c FillPat.c OledChar.c OledGrph.c PmodOLED.c delay.c main.c
 
 
 CFLAGS=
@@ -142,12 +142,6 @@ ${OBJECTDIR}/main.o: main.c  nbproject/Makefile-${CND_CONF}.mk
 	@${RM} ${OBJECTDIR}/main.o 
 	@${FIXDEPS} "${OBJECTDIR}/main.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE) -g -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1 -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -MMD -MF "${OBJECTDIR}/main.o.d" -o ${OBJECTDIR}/main.o main.c    -DXPRJ_default=$(CND_CONF)  -legacy-libc  $(COMPARISON_BUILD) 
 	
-${OBJECTDIR}/hw3.o: hw3.c  nbproject/Makefile-${CND_CONF}.mk
-	@${MKDIR} "${OBJECTDIR}" 
-	@${RM} ${OBJECTDIR}/hw3.o.d 
-	@${RM} ${OBJECTDIR}/hw3.o 
-	@${FIXDEPS} "${OBJECTDIR}/hw3.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE) -g -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1 -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -MMD -MF "${OBJECTDIR}/hw3.o.d" -o ${OBJECTDIR}/hw3.o hw3.c    -DXPRJ_default=$(CND_CONF)  -legacy-libc  $(COMPARISON_BUILD) 
-	
 else
 ${OBJECTDIR}/ChrFont0.o: ChrFont0.c  nbproject/Makefile-${CND_CONF}.mk
 	@${MKDIR} "${OBJECTDIR}" 
@@ -190,12 +184,6 @@ ${OBJECTDIR}/main.o: main.c  nbproject/Makefile-${CND_CONF}.mk
 	@${RM} ${OBJECTDIR}/main.o.d 
 	@${RM} ${OBJECTDIR}/main.o 
 	@${FIXDEPS} "${OBJECTDIR}/main.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -MMD -MF "${OBJECTDIR}/main.o.d" -o ${OBJECTDIR}/main.o main.c    -DXPRJ_default=$(CND_CONF)  -legacy-libc  $(COMPARISON_BUILD) 
-	
-${OBJECTDIR}/hw3.o: hw3.c  nbproject/Makefile-${CND_CONF}.mk
-	@${MKDIR} "${OBJECTDIR}" 
-	@${RM} ${OBJECTDIR}/hw3.o.d 
-	@${RM} ${OBJECTDIR}/hw3.o 
-	@${FIXDEPS} "${OBJECTDIR}/hw3.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -MMD -MF "${OBJECTDIR}/hw3.o.d" -o ${OBJECTDIR}/hw3.o hw3.c    -DXPRJ_default=$(CND_CONF)  -legacy-libc  $(COMPARISON_BUILD) 
 	
 endif
 

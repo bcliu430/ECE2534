@@ -23,7 +23,6 @@
       <itemPath>PmodOLED.c</itemPath>
       <itemPath>delay.c</itemPath>
       <itemPath>main.c</itemPath>
-      <itemPath>hw3.c</itemPath>
     </logicalFolder>
     <logicalFolder name="ExternalFiles"
                    displayName="Important Files"

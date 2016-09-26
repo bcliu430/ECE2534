@@ -1,0 +1,30 @@
+ecently we have discussed using debouncing to interface with a pushbutton switch. Write a program for your Diligent board that implement the following behavior of the LEDs and Button actions
+
+1. LED patterns was initialized as LED1 flash every 500ms but other 3 are off (we call it 0001 state). 
+   if LED2 is flahing and others are off (we call it 0010 state), so as for LED3 and LED4. 
+
+2. Every time BTN1 is pressed, the LED patterns make circular-left-shift, as the following pattern
+
+     0001 --> 0010  --> 0100 --> 1000 -->   0001 --> 0010  --> 0100 --> 1000 -->  0001 --> ......
+
+3. Every time BTN2 is pressed, the LED patterns make circular-right-shift, as the following pattern:
+
+     0001  --> 1000 --> 0100 --> 0010 -->0001  --> 1000 --> 0100 --> 0010 -->  0001  --> .......
+
+4.  Every time BTN1 and BTN2 are both pressed at same time, the system will reset with following actions:
+      a) All LEDs flashing together for 5 times every 500ms
+      b) Then All LEDs are off for 1ms
+      c) Initialize the system to 0001 state
+
+Please note the following points: 
+Your program must perform debouncing for both pushbuttons. The LED pattern should change as a result of a debounced 0-to-1 transition of a pushbutton switch.  This requirement means that the LED pattern makes only a single shift for any single press-and-release of a switch. This requirement also means that the user should be able to press and hold a button for a long time, but observe the LED pattern changing only when the switch is initially pressed.
+Your program must use a timer to assist in the debouncing of both pushbuttons. Use one of the type-B timers (e.g., Timer 2) and configure it to roll over at a frequency of 1000 Hz. Use the resulting 1-millisecond intervals to sample the states of the two pushbuttons, and incorporate those 1-ms samples into your debouncing procedure. You could use the following code fragment to check for roll-over:  
+            if (INTGetFlag(INT_T2))    // Has roll-over occurred? (Has 1 ms passed?) 
+            {       
+                    INTClearFlag(INT_T2);  // Clear flag so we don't respond until it sets again   
+             . . .
+ 
+Your approach for updating the LED pattern must be based on a state machine consisting of at least 4 states. You must submit a full state table (Please put the full state table in the comments part of beginning your code) that illustrates the design that you have implemented. Use “switch” and “enum” statements to implement your state machine, as described in recent lectures. 
+ 
+ 
+You can use LAB1 step7.zip file as your supporting code. Do not need to submit those. However, if you make any change to it, please do submit the changed code as well.
