@@ -133,6 +133,9 @@ void initialization() {
     DelayMs(1);
     LATGSET =0X1000;//0001 0000 0000 0000
 
+//TODO
+//figure out 500ms delay and 1ms delay
+
     
 } //end initialization
 
