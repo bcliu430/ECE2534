@@ -8,6 +8,9 @@
 //					PmodOLED.c uses SPI1 for communication with the OLED.
 // Written by:      Beichen Liu
 // Last modified:   9/26/2016
+// TODO
+// Need to figure out how to flashing while reading the next value from BTN;
+
 
 #include <stdio.h>                      // for sprintf()
 #include <stdbool.h>
@@ -35,77 +38,90 @@ enum state systemState;
 void initialization();
 bool getInputBTN1();
 bool getInputBTN2();
-int getInput();
+int  getInput();
 bool Timer2Input();
+void Timer2Init();
+bool getInputBTN1and2();
 
 int main() {
-    // Initialize GPIO for BTN1 and LED1
-    TRISGSET = 0xC0; // For BTN1: configure PortG bit for input
-    TRISGCLR = 0x4000; // For LED1: configure PortG pin for output
-    ODCGCLR = 0xF000; // For LED1: configure as normal output (not open drain)
 
-    void Timer2Init();
-
+    unsigned int ini_timeCount =0;
     int next;
     initialization();
     while (1) {
         
+          //  initialization();
+  
         switch (systemState) {
-            case init:
-                if (getInput() == 0)
-                    initialization();
-                    systemState = LED1;
-                break;
- 
             case LED1:
-                LATGSET = (1 << 12); 
-                next = getInput();
-               
-                if (next == 1){
-                    LATGCLR =0XF000;
-                    systemState = LED2; }
-                if (next == 2) {
-                    LATGCLR =0XF000;
-                    systemState = LED4; }
-               ;
+                LATGSET = (1 << 12);
+                while (ini_timeCount<500) {
+                    if (Timer2Input()) {
+                        next = getInput();
+                    
+                        if (next == 1){
+                            LATGCLR =0XF000;
+                            systemState = LED2; }
+                        else if (next == 2) {
+                            LATGCLR =0XF000;
+                            systemState = LED4; }
+                        else if (next ==3)
+                            initialization();
+                        
+                        ini_timeCount++;
+                        }
+                    if (ini_timeCount==500) {
+                        LATGINV=0x1000;
+                        ini_timeCount = 0;
+                    }
+                              
+                
+   
+                
+        }   
                 break;
 
             case LED2:
                 LATGSET = (1 << 13);
                 next = getInput();
-
+                
                 if (next == 1) {
                     LATGCLR =0XF000;
                     systemState = LED3; }
-                if (next == 2) {
+                else if (next == 2) {
                     LATGCLR =0XF000;
                     systemState = LED1; }
-                
+                else if (next ==3)
+                    initialization();
                 break;
 
             case LED3:
                 LATGSET = (1 << 14);
                 next = getInput();
-
+                
+ 
                 if (next == 1) {
                     LATGCLR =0XF000;
                     systemState = LED4; }
-                if (next == 2) { 
+                else if (next == 2) { 
                     LATGCLR =0XF000;
                     systemState = LED2; }
-                 
+                else if (next ==3)
+                    initialization();
                 break;
 
             case LED4:
                 LATGSET = (1 << 15);
                 next = getInput();
-
+                
                 if (next == 1) {
                     LATGCLR =0XF000;
                     systemState = LED1; }
-                if (next == 2) {                    
+                else if (next == 2) {                    
                     LATGCLR =0XF000;
                     systemState = LED3; }
+                else if (next ==3)
+                    initialization();
                 
                 break;
         }
@@ -117,24 +133,43 @@ int main() {
 } // end main  
 
 void initialization() {
-    // Initialize GPIO for BTN1-2 and LED1-4
-    TRISGSET = 0xC0;     // For BTN1: configure PortG bit for input
-    TRISGCLR = 0xF000;   // For LED1-4: configure PortG pin for output
-    ODCGCLR  = 0xF000;   // For LED1-4: configure as normal output (not open drain)
-    int i;
-    for (i =0; i<5; i++){
-        LATGCLR = 0XF000;
-        LATGSET = 0XF000;
-        LATGCLR = 0XF000;
-        //DelayMs(500);
-   
-    }
-    LATGCLR = 0XF000;
-    DelayMs(1);
-    LATGSET =0X1000;//0001 0000 0000 0000
+       // Initialize GPIO for BTN1 and LED1
+    TRISGSET = 0xC0; // For BTN1: configure PortG bit for input
+    TRISGCLR = 0xF000; // For LED1: configure PortG pin for output
+    ODCGCLR = 0xF000; // For LED1: configure as normal output (not open drain)
 
-//TODO
-//figure out 500ms delay and 1ms delay
+    
+    
+    unsigned int ini_timeCount = 0; // Elapsed time since initialization of program
+    unsigned int ini_timeCount2 = 0;
+    unsigned int count =0;
+ 
+    Timer2Init();   
+        
+    LATGSET=0xF000;
+    while (ini_timeCount2<500 ){
+        while (ini_timeCount<50) {
+            if (Timer2Input()) {
+                // Timer2 has rolled over, so increment count of elapsed time
+                ini_timeCount++;
+                ini_timeCount2++;
+            }
+        }
+            if(ini_timeCount ==50) {
+                LATGINV=0xF000; 
+                ini_timeCount =0;
+            }
+
+        
+    }
+    while (count < 1)  {        
+         LATGCLR = 0xF000;
+         if (Timer2Input())
+              count++;  }
+    
+    systemState = LED1;
+
+
 
     
 } //end initialization
@@ -148,15 +183,12 @@ int getInput() {
     else if (BTN1 == 1) && (BTN2 == 1)
         return Both;
 */
-
-    if (getInputBTN1() && getInputBTN2()) //both return true 
-        return 0;
-    else if (getInputBTN1()) //if only BTN1 is pushed
+    if ( getInputBTN1and2())
+       return 3;
+    else if (getInputBTN1() && !getInputBTN2())
         return 1;
-    else if (getInputBTN2()) //if only BTN2 is pushed
+    else if (getInputBTN2() && !getInputBTN1()) //both return true 
         return 2;
-    else
-        return; 
 
 } //END getInput
 
@@ -203,7 +235,7 @@ bool getInputBTN2()
     button2PreviousPosition = button2CurrentPosition;
 
     button2History = button2History << 1;           // Sample BTN1
-    if(PORTG & 0x80)                
+    if(PORTG & 0x80 )                
     {
         button2History = button2History | 0x01;
     }
@@ -221,6 +253,32 @@ bool getInputBTN2()
     {
         return TRUE; // debounced 0-to-1 transition has been detected
     }
+    return FALSE;    // 0-to-1 transition not detected
+}
+
+bool getInputBTN1and2() {
+    enum ButtonPosition {UP, DOWN}; // Possible states of BTN1
+    
+    static enum ButtonPosition buttonCurrentPosition = UP;  // BTN1 current state
+    static enum ButtonPosition buttonPreviousPosition = UP; // BTN1 previous state
+    static unsigned int buttonHistory = 0x0;            // Last 32 samples of BTN1
+    // Reminder - "static" variables retain their values from one call to the next.
+    
+    buttonPreviousPosition = buttonCurrentPosition;
+
+    buttonHistory = buttonHistory << 1;           // Sample BTN1
+    if(PORTG & 0x40 && PORTG & 0x80 )               
+         buttonHistory = buttonHistory | 0x01;
+    
+    
+    if ((buttonHistory == 0xFFFFFFFF) && (buttonCurrentPosition == UP))
+        buttonCurrentPosition = DOWN;
+    else if ((buttonHistory == 0x0000) && (buttonCurrentPosition == DOWN))
+        buttonCurrentPosition = UP;  
+    
+    if((buttonCurrentPosition == DOWN) && (buttonPreviousPosition == UP))
+        return TRUE; // debounced 0-to-1 transition has been detected
+    
     return FALSE;    // 0-to-1 transition not detected
 }
 
@@ -244,8 +302,8 @@ bool Timer2Input()
 }
 
 void Timer2Init() {
-    // The period of Timer 2 is (32 * 62500)/(10 MHz) = 500 ms (freq = 2 Hz)
-    OpenTimer2(T2_ON | T2_IDLE_CON | T2_SOURCE_INT | T2_PS_1_32 | T2_GATE_OFF, 156249);
+    // The period of Timer 2 is (8 * 1250)/(10 MHz) = 1 ms (freq = 1000 Hz)
+    OpenTimer2(T2_ON | T2_IDLE_CON | T2_SOURCE_INT | T2_PS_1_8 | T2_GATE_OFF, 1249);
     return;
 }
 
