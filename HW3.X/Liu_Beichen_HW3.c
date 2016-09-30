@@ -11,23 +11,31 @@
 // Written by:      Beichen Liu
 // Last modified:   9/30/2016
 //
-//
 //////////////////////////////////////////////////////////////////////////
 //                                                                      //
 //                                                                      // 
-//                STATE DIAGTAM                                         //
+//                STATE TABLE                                           //
 //                                                                      // 
-//                                                                      // 
-//               next state when                                        // 
-//            BTN1    BTN2        BOTH                                  //
+//   current   current      next                   OUTPUT               // 
+//    state     input       state                                       // 
 //                                                                      //
-//    LED1    LED2    LED4    inti,then LED1                            //
+//               BTN1        LED2               LED2 flashing           //
+//    LED1       BTN2        LED4               LED4 flashing           //
+//               BOTH     LED1(init)       4 leds flashing then LED1    //
 //                                                                      //
-//    LED2    LED3    LED1    inti,then LED1                            //
+//               BTN1        LED3               LED3 flashing           //
+//    LED2       BTN2        LED1               LED1 flashing           //
+//               BOTH     LED1(init)       4 leds flashing then LED1    //
 //                                                                      //
-//    LED3    LED4    LED2    inti,then LED1                            //
+//               BTN1        LED4               LED4 flashing           //
+//    LED3       BTN2        LED2               LED2 flashing           //
+//               BOTH     LED1(init)       4 leds flashing then LED1    //
 //                                                                      //
-//    LED4    LED1    LED3    inti,then LED1                            //
+//               BTN1        LED1               LED1 flashing           //
+//    LED4       BTN2        LED3               LED3 flashing           //
+//               BOTH     LED1(init)       4 leds flashing then LED1    //
+//                                                                      //
+//                                                                      //
 //                                                                      //
 //                                                                      //
 ////////////////////////////////////////////////////////////////////////// 
@@ -35,7 +43,6 @@
 //
 //
 /////////////////////////////////////////////////////////////////////////////////////
-
 
 
 
