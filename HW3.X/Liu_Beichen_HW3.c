@@ -1,34 +1,46 @@
 ////////////////////////////////////////////////////////////////////////////////////
 // ECE 2534:        HW3
-// File name:       main.c
-// Description:     Test the Digilent board by writing a short message to the OLED.
-//                  Also display a counter that updates every 100 milliseconds.
+// File name:       Liu_Beichen_hw3.c
+// Description:     This program is described as following state diagram.
+//          
 // Resources:       main.c uses Timer2 to measure elapsed time.
-//					delay.c uses Timer1 to provide delays with increments of 1 ms.
-//					PmodOLED.c uses SPI1 for communication with the OLED.
+//		    delay.c uses Timer1 to provide delays with increments of 1 ms.
+//		    PmodOLED.c uses SPI1 for communication with the OLED.
+//
+//
 // Written by:      Beichen Liu
-// Last modified:   9/26/2016
-// TODO
-// Need to figure out how to flashing while reading the next value from BTN;
-///////////////////////////////////////////////////////////////////////////
-/*
- 
- 
-       LED1 -> 1->  LED2 -> 1 -> LED3 ->  1 -> LED4 ->  1 -> LED1
-       LED1 <- 2 <- LED2 <- 2 <- LED3 <-  2 <- LED4 <-  2 <- LED1
-                     
- 
- 
- 
- 
- */
+// Last modified:   9/30/2016
+//
+//
+//////////////////////////////////////////////////////////////////////////
+//                                                                      //
+//                                                                      // 
+//                STATE DIAGTAM                                         //
+//                                                                      // 
+//                                                                      // 
+//               next state when                                        // 
+//            BTN1    BTN2        BOTH                                  //
+//                                                                      //
+//    LED1    LED2    LED4    inti,then LED1                            //
+//                                                                      //
+//    LED2    LED3    LED1    inti,then LED1                            //
+//                                                                      //
+//    LED3    LED4    LED2    inti,then LED1                            //
+//                                                                      //
+//    LED4    LED1    LED3    inti,then LED1                            //
+//                                                                      //
+//                                                                      //
+////////////////////////////////////////////////////////////////////////// 
+//
+//
+//
+/////////////////////////////////////////////////////////////////////////////////////
 
 
 
 
 #include <stdio.h>                      // for sprintf()
-#include <stdbool.h>
-#include <string.h>
+#include <stdbool.h>                    // for bool
 #include <plib.h>                       // Peripheral Library
 #include "PmodOLED.h"
 #include "OledChar.h"
@@ -72,21 +84,21 @@ int main() {
 
                    
                         
-            case LED1:
-                if (INTGetFlag(INT_T3)){
+            case LED1:    //state 0001
+                if (INTGetFlag(INT_T3)){    //check if timer3 rolls over
                     LATGINV = 0X1000;
                     INTClearFlag(INT_T3); } 
                 
-                next = getInput();
+                next = getInput();          //get next input if push buttons
                     
-                if (next == 1){
+                if (next == 1){             //BTN1 pushed 
+                    LATGCLR =0XF000;        
+                    systemState = LED2; }   //mv to state 0010
+                else if (next == 2) {       //BTN2 pushed
                     LATGCLR =0XF000;
-                    systemState = LED2; }
-                else if (next == 2) {
-                    LATGCLR =0XF000;
-                    systemState = LED4; }
-                else if (next ==3)
-                    initialization();
+                    systemState = LED4; }   //mv to state 1000
+                else if (next ==3)          //BTN1 and BTN2 pushed 
+                    initialization();       //reset
                
                 
                 break;
@@ -178,8 +190,8 @@ void initialization() {
                 ini_timeCount2++;
             }
         }
-            if(ini_timeCount ==50) {
-                LATGINV=0xF000; 
+            if(ini_timeCount ==50) { 
+                LATGINV=0xF000;  //inverse the light every 50ms
                 ini_timeCount =0;
             }
 
@@ -336,7 +348,7 @@ void Timer2Init() {
 
 
 void Timer3Init() {
-    // The period of Timer 2 is (64 * 39064)/(10 MHz) = 1 ms (freq = 4 Hz)
+    // The period of Timer 2 is (64 * 39064)/(10 MHz) = 250 ms (freq = 4 Hz)
     OpenTimer3(T3_ON | T3_IDLE_CON | T3_SOURCE_INT | T3_PS_1_64 | T3_GATE_OFF, 39064);
     INTClearFlag(INT_T3);
     return;
@@ -344,8 +356,8 @@ void Timer3Init() {
 
 bool Timer3Input()
 {
-    int timer3_current;                 // current reading from Timer2
-    static int timer3_previous = 0;     // previous reading from Timer2
+    int timer3_current;                 // current reading from Timer3
+    static int timer3_previous = 0;     // previous reading from Timer3
                                         //  (note:  static value is retained
                                         //  from previous call)  
     
