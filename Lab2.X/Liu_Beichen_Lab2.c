@@ -19,7 +19,7 @@
  * figure out Timer
  * other details
  * 
- * Question
+ * Question?
  * display milisecond?
  * page 4 example
  * power cycle?
