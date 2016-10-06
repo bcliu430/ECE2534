@@ -1,13 +1,13 @@
 ////////////////////////////////////////////////////////////////////////////////////
-// ECE 2534:        Lab 1
-// File name:       main.c
+// ECE 2534:        Lab 2
+// File name:       Liu_Beichen_bcliu430.c
 // Description:     Test the Digilent board by writing a short message to the OLED.
 //                  Also display a counter that updates every 100 milliseconds.
 // Resources:       main.c uses Timer2 to measure elapsed time.
 //					delay.c uses Timer1 to provide delays with increments of 1 ms.
 //					PmodOLED.c uses SPI1 for communication with the OLED.
-// Written by:      Patterson, Plassmann, Abbott
-// Last modified:   8/30/2016
+// Written by:      Beichen Liu 
+// Last modified:   10/6/2016
 
 #include <stdio.h>                      // for sprintf()
 #include <stdbool.h>
@@ -53,7 +53,7 @@ void timer2Input();
 long getRand();
 
 
-enum state {hd, stats, Hd4Bit,Hd8Bit, Stats4Bit, Stats8Bit};
+enum state {hd, stats, Hd4Bit,Hd8Bit, Stats4Bit, Stats8Bit,BackHD, BackStats};
 enum state menu;
 
 int main()
@@ -83,7 +83,7 @@ int main()
                     menu = hd; 
                 } 
                 else if (getBTN2()) {
-                    Menu(5);
+                    Menu(6);
                     menu = Stats4Bit;
                 }
                 break;
@@ -102,35 +102,56 @@ int main()
                 
             case Hd8Bit:
                 if(getBTN1()) {
-                    Menu(3); //3 means the arrow at HD 4 bit;
-                    menu= Hd4Bit; 
+                    Menu(5); //3 means the arrow at HD 4 bit;
+                    menu= BackHD; 
                 }
                 else if(getBTN2()){
                     HDisplay(2);
                 }
-
-
+                break;
+            case BackHD:
+                if(getBTN1()){
+                    Menu(3);
+                    menu = Hd4Bit;
+                }
+                else if(getBTN2()){
+                    Menu(1);
+                    menu = hd;
+                }
                 break;
                 
                 
             case Stats4Bit:
                 if (getBTN1()) {
-                    Menu(6);
+                    Menu(7);
                     menu = Stats8Bit;
                 } else if (getBTN2()) {
                     statsDisplay(1);
+
                 }
                 //show 4 bit stats 
                 break;
             case Stats8Bit:
                 if (getBTN1()) {
-                    Menu(5);
-                    menu = Stats4Bit;
+                    Menu(8);
+                    menu = BackStats;
                 } else if (getBTN2()) {
                     statsDisplay(2);
+                    
                 }
                 break;
                 //show 8bit statistics;
+                
+            case BackStats:
+                if(getBTN1()){
+                    Menu(6);
+                    menu = Stats4Bit;
+                }
+                else if(getBTN2()){
+                    Menu(1);
+                    menu = hd;
+                }
+                break;
 
         } //END SWITCH
     }//END WHILE
@@ -270,6 +291,8 @@ void Menu(int num){
         OledPutString("-> 4-bit");
         OledSetCursor(0, 2); // column 0, row 2 of display
         OledPutString("   8-bit");
+        OledSetCursor(0, 3); // column 0, row 2 of display
+        OledPutString("   Back");
         OledUpdate();
     }
     else if (num == 4){
@@ -280,9 +303,25 @@ void Menu(int num){
         OledPutString("   4-bit");
         OledSetCursor(0, 2); // column 0, row 2 of display
         OledPutString("-> 8-bit");
+        OledSetCursor(0, 3); // column 0, row 2 of display
+        OledPutString("   Back");
         OledUpdate();
     }
-    else if (num == 5){
+        else if (num == 5){
+        OledClearBuffer();
+        OledSetCursor(0, 0); // upper-left corner of display
+        OledPutString("HD");
+        OledSetCursor(0, 1); // column 0, row 1 of display
+        OledPutString("   4-bit");
+        OledSetCursor(0, 2); // column 0, row 2 of display
+        OledPutString("   8-bit");
+        OledSetCursor(0, 3); // column 0, row 2 of display
+        OledPutString("-> Back");
+        OledUpdate();
+    }
+        
+
+    else if (num == 6){
         OledClearBuffer();
         OledSetCursor(0, 0); // upper-left corner of display
         OledPutString("Statistics");
@@ -290,9 +329,11 @@ void Menu(int num){
         OledPutString("-> 4-bit");
         OledSetCursor(0, 2); // column 0, row 2 of display
         OledPutString("   8-bit");
+        OledSetCursor(0, 3); // column 0, row 2 of display
+        OledPutString("   Back");
         OledUpdate();
     }
-    else if (num == 6){
+    else if (num == 7){
         OledClearBuffer();
         OledSetCursor(0, 0); // upper-left corner of display
         OledPutString("Statistics");
@@ -300,6 +341,20 @@ void Menu(int num){
         OledPutString("   4-bit");
         OledSetCursor(0, 2); // column 0, row 2 of display
         OledPutString("-> 8-bit");
+         OledSetCursor(0, 3); // column 0, row 2 of display
+        OledPutString("   Back");
+        OledUpdate();
+    }
+    else if (num == 8){
+        OledClearBuffer();
+        OledSetCursor(0, 0); // upper-left corner of display
+        OledPutString("Statistics");
+        OledSetCursor(0, 1); // column 0, row 1 of display
+        OledPutString("   4-bit");
+        OledSetCursor(0, 2); // column 0, row 2 of display
+        OledPutString("   8-bit");
+        OledSetCursor(0, 3); // column 0, row 2 of display
+        OledPutString("-> Back");
         OledUpdate();
     }
 
@@ -318,6 +373,7 @@ void statsDisplay(int num){
         OledSetCursor(0, 3);          
         OledPutString("3. "); //add some buf here
         OledUpdate();
+
     }
     else if (num == 2){
         //display 8 bit best 3 records;
@@ -331,6 +387,8 @@ void statsDisplay(int num){
         OledSetCursor(0, 3);          
         OledPutString("3. "); //add some buf here
         OledUpdate();
+
+        
     }
 }
     
@@ -342,7 +400,7 @@ void HDisplay(int num){
         char buf[17];               // Temporary string for OLED display
               
         OledClearBuffer();
-           
+         /*
         if (INTGetFlag(INT_T2))
         {            
             // Timer2 has rolled over, so increment count of elapsed time
@@ -354,8 +412,8 @@ void HDisplay(int num){
             sprintf(buf, "%14d.%d", timeCount/10, timeCount%10);
             OledSetCursor(0, 3);
             OledPutString(buf);
-            OledUpdate();
-        
+            OledUpdate();*/
+        Timer2Init();
         //display 4 bit best 3 records;
         OledSetCursor(0, 0);          // upper-left corner of display
         OledPutString("4-Bit HD");

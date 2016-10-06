@@ -22,7 +22,7 @@
       <itemPath>OledGrph.c</itemPath>
       <itemPath>PmodOLED.c</itemPath>
       <itemPath>delay.c</itemPath>
-      <itemPath>main.c</itemPath>
+      <itemPath>Liu_Beichen_bcliu430.c</itemPath>
     </logicalFolder>
     <logicalFolder name="ExternalFiles"
                    displayName="Important Files"
