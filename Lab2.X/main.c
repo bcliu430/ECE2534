@@ -28,12 +28,30 @@
 #pragma config FPBDIV       = DIV_8	    // Peripheral bus clock divider
 #pragma config FSOSCEN      = OFF	    // Secondary oscillator enable
 
+/*
+ * TODO
+ * how to get a random number 4bit 0-15 8bit 0-255
+ * how to store the buf into mem
+ * how to use uart to do i/o
+ * figure out Timer
+ * other details
+ * 
+ * Question?
+ * display milisecond?
+ * page 4 example
+ * power cycle?
+ * next step after stat displayed?
+ */
+
 void init();
 bool getBTN1();
 bool getBTN2();
 void Menu(int num);
 void statsDisplay(int num);
 void HDisplay(int num);
+void timer2Input();
+long getRand();
+
 
 enum state {hd, stats, Hd4Bit,Hd8Bit, Stats4Bit, Stats8Bit};
 enum state menu;
@@ -41,7 +59,7 @@ enum state menu;
 int main()
 {
     
-    
+
     init();
     while (1) {
         switch(menu){
@@ -125,6 +143,7 @@ void Timer2Init()
 {
     // The period of Timer 2 is (16 * 62500)/(10 MHz) = 100 ms (freq = 10 Hz)
     OpenTimer2(T2_ON | T2_IDLE_CON | T2_SOURCE_INT | T2_PS_1_16 | T2_GATE_OFF, 62499);
+    INTClearFlag(INT_T2);
     return;
 }
 
@@ -137,7 +156,7 @@ void init(){
     // Initialize PmodOLED, also Timer1 and SPI1
     DelayInit();
     OledInit();
-
+    Timer2Init();
     /*
          // Send a welcome message to the OLED display
     OledClearBuffer();
@@ -219,9 +238,6 @@ bool getBTN2()
     }
     return FALSE;    // 0-to-1 transition not detected
 }
-
-
-
 
 
 
@@ -319,8 +335,27 @@ void statsDisplay(int num){
 }
     
 void HDisplay(int num){
+    
     if (num ==1){
+        static int timeCount=0;        
+
+        char buf[17];               // Temporary string for OLED display
+              
         OledClearBuffer();
+           
+        if (INTGetFlag(INT_T2))
+        {            
+            // Timer2 has rolled over, so increment count of elapsed time
+            INTClearFlag(INT_T2);
+            timeCount++;
+
+        }
+            // Display elapsed time in units of seconds, with decimal point
+            sprintf(buf, "%14d.%d", timeCount/10, timeCount%10);
+            OledSetCursor(0, 3);
+            OledPutString(buf);
+            OledUpdate();
+        
         //display 4 bit best 3 records;
         OledSetCursor(0, 0);          // upper-left corner of display
         OledPutString("4-Bit HD");
@@ -328,12 +363,11 @@ void HDisplay(int num){
         OledPutString("****");//add some buf here.
         OledSetCursor(0, 2);          
         OledPutString("  "); //wait for user input.
-        OledSetCursor(0, 3);          
-        OledPutString("  "); //add timer
         OledUpdate();
     }
     else if (num == 2){
         OledClearBuffer();
+        timer2Input();
         //run 8 bit result;
         OledSetCursor(0, 0);          // upper-left corner of display
         OledPutString("8-Bit HD");
@@ -341,8 +375,46 @@ void HDisplay(int num){
         OledPutString("********");//add some buf here.
         OledSetCursor(0, 2);          
         OledPutString("  "); //wait for user input.
-        OledSetCursor(0, 3);          
-        OledPutString("  "); //add timer
+        
         OledUpdate();
     }
+}
+
+void timer2Input(){
+        char buf[17];               // Temporary string for OLED display
+        static unsigned int timeCount = 0; // Elapsed time since initialization of program
+        unsigned int timer2_current=0, timer2_previous=0;
+        
+        Timer2Init();
+        
+        
+        timer2_current = ReadTimer2();
+        if (timer2_previous > timer2_current)
+        {
+            // Timer2 has rolled over, so increment count of elapsed time
+            timeCount++;
+            
+            // Display elapsed time in units of seconds, with decimal point
+            sprintf(buf, "%14d.%d", timeCount/10, timeCount%10);
+            OledSetCursor(0, 3);
+            OledPutString(buf);
+            OledUpdate();
+        }
+        timer2_previous = timer2_current;
+    }
+
+long getRand(int num){
+    int i;
+    long bit_out;
+    if (num == 4){
+        for(i = 0; i<3; i++)
+            bit_out = bit_out | (rand()%2 << i);
+    }
+    else if (num == 8){
+        for(i = 0; i<7; i++)
+            bit_out = bit_out | (rand()%2 << i);
+        
+    } 
+    
+    return bit_out;
 }
