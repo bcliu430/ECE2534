@@ -34,8 +34,7 @@
 
 /*
  * TODO
- * how to get a random number 4bit 0-15 8bit 0-255
- * How to check enter?
+ * where to put the  check "enter"?
  * 
  * 
  * 
