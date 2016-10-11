@@ -51,17 +51,17 @@ OBJECTDIR=build/${CND_CONF}/${IMAGE_TYPE}
 DISTDIR=dist/${CND_CONF}/${IMAGE_TYPE}
 
 # Source Files Quoted if spaced
-SOURCEFILES_QUOTED_IF_SPACED=ChrFont0.c FillPat.c OledChar.c OledGrph.c PmodOLED.c delay.c Liu_Beichen_bcliu430.c
+SOURCEFILES_QUOTED_IF_SPACED=ChrFont0.c FillPat.c OledChar.c OledGrph.c PmodOLED.c delay.c Liu_Beichen_bcliu430.c myUART.c
 
 # Object Files Quoted if spaced
-OBJECTFILES_QUOTED_IF_SPACED=${OBJECTDIR}/ChrFont0.o ${OBJECTDIR}/FillPat.o ${OBJECTDIR}/OledChar.o ${OBJECTDIR}/OledGrph.o ${OBJECTDIR}/PmodOLED.o ${OBJECTDIR}/delay.o ${OBJECTDIR}/Liu_Beichen_bcliu430.o
-POSSIBLE_DEPFILES=${OBJECTDIR}/ChrFont0.o.d ${OBJECTDIR}/FillPat.o.d ${OBJECTDIR}/OledChar.o.d ${OBJECTDIR}/OledGrph.o.d ${OBJECTDIR}/PmodOLED.o.d ${OBJECTDIR}/delay.o.d ${OBJECTDIR}/Liu_Beichen_bcliu430.o.d
+OBJECTFILES_QUOTED_IF_SPACED=${OBJECTDIR}/ChrFont0.o ${OBJECTDIR}/FillPat.o ${OBJECTDIR}/OledChar.o ${OBJECTDIR}/OledGrph.o ${OBJECTDIR}/PmodOLED.o ${OBJECTDIR}/delay.o ${OBJECTDIR}/Liu_Beichen_bcliu430.o ${OBJECTDIR}/myUART.o
+POSSIBLE_DEPFILES=${OBJECTDIR}/ChrFont0.o.d ${OBJECTDIR}/FillPat.o.d ${OBJECTDIR}/OledChar.o.d ${OBJECTDIR}/OledGrph.o.d ${OBJECTDIR}/PmodOLED.o.d ${OBJECTDIR}/delay.o.d ${OBJECTDIR}/Liu_Beichen_bcliu430.o.d ${OBJECTDIR}/myUART.o.d
 
 # Object Files
-OBJECTFILES=${OBJECTDIR}/ChrFont0.o ${OBJECTDIR}/FillPat.o ${OBJECTDIR}/OledChar.o ${OBJECTDIR}/OledGrph.o ${OBJECTDIR}/PmodOLED.o ${OBJECTDIR}/delay.o ${OBJECTDIR}/Liu_Beichen_bcliu430.o
+OBJECTFILES=${OBJECTDIR}/ChrFont0.o ${OBJECTDIR}/FillPat.o ${OBJECTDIR}/OledChar.o ${OBJECTDIR}/OledGrph.o ${OBJECTDIR}/PmodOLED.o ${OBJECTDIR}/delay.o ${OBJECTDIR}/Liu_Beichen_bcliu430.o ${OBJECTDIR}/myUART.o
 
 # Source Files
-SOURCEFILES=ChrFont0.c FillPat.c OledChar.c OledGrph.c PmodOLED.c delay.c Liu_Beichen_bcliu430.c
+SOURCEFILES=ChrFont0.c FillPat.c OledChar.c OledGrph.c PmodOLED.c delay.c Liu_Beichen_bcliu430.c myUART.c
 
 
 CFLAGS=
@@ -142,6 +142,12 @@ ${OBJECTDIR}/Liu_Beichen_bcliu430.o: Liu_Beichen_bcliu430.c  nbproject/Makefile-
 	@${RM} ${OBJECTDIR}/Liu_Beichen_bcliu430.o 
 	@${FIXDEPS} "${OBJECTDIR}/Liu_Beichen_bcliu430.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE) -g -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1 -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -MMD -MF "${OBJECTDIR}/Liu_Beichen_bcliu430.o.d" -o ${OBJECTDIR}/Liu_Beichen_bcliu430.o Liu_Beichen_bcliu430.c    -DXPRJ_default=$(CND_CONF)  -legacy-libc  $(COMPARISON_BUILD) 
 	
+${OBJECTDIR}/myUART.o: myUART.c  nbproject/Makefile-${CND_CONF}.mk
+	@${MKDIR} "${OBJECTDIR}" 
+	@${RM} ${OBJECTDIR}/myUART.o.d 
+	@${RM} ${OBJECTDIR}/myUART.o 
+	@${FIXDEPS} "${OBJECTDIR}/myUART.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE) -g -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1 -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -MMD -MF "${OBJECTDIR}/myUART.o.d" -o ${OBJECTDIR}/myUART.o myUART.c    -DXPRJ_default=$(CND_CONF)  -legacy-libc  $(COMPARISON_BUILD) 
+	
 else
 ${OBJECTDIR}/ChrFont0.o: ChrFont0.c  nbproject/Makefile-${CND_CONF}.mk
 	@${MKDIR} "${OBJECTDIR}" 
@@ -184,6 +190,12 @@ ${OBJECTDIR}/Liu_Beichen_bcliu430.o: Liu_Beichen_bcliu430.c  nbproject/Makefile-
 	@${RM} ${OBJECTDIR}/Liu_Beichen_bcliu430.o.d 
 	@${RM} ${OBJECTDIR}/Liu_Beichen_bcliu430.o 
 	@${FIXDEPS} "${OBJECTDIR}/Liu_Beichen_bcliu430.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -MMD -MF "${OBJECTDIR}/Liu_Beichen_bcliu430.o.d" -o ${OBJECTDIR}/Liu_Beichen_bcliu430.o Liu_Beichen_bcliu430.c    -DXPRJ_default=$(CND_CONF)  -legacy-libc  $(COMPARISON_BUILD) 
+	
+${OBJECTDIR}/myUART.o: myUART.c  nbproject/Makefile-${CND_CONF}.mk
+	@${MKDIR} "${OBJECTDIR}" 
+	@${RM} ${OBJECTDIR}/myUART.o.d 
+	@${RM} ${OBJECTDIR}/myUART.o 
+	@${FIXDEPS} "${OBJECTDIR}/myUART.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -MMD -MF "${OBJECTDIR}/myUART.o.d" -o ${OBJECTDIR}/myUART.o myUART.c    -DXPRJ_default=$(CND_CONF)  -legacy-libc  $(COMPARISON_BUILD) 
 	
 endif
 

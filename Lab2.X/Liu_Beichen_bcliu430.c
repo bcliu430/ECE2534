@@ -13,12 +13,13 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <plib.h>                       // Peripheral Library
+#include "string.h"
 #include "PmodOLED.h"
 #include "OledChar.h"
 #include "OledGrph.h"
 #include "delay.h"
 #include "myUART.h"
-
+#include <time.h>
 
 // Digilent board configuration
 #pragma config ICESEL       = ICS_PGx1  // ICE/ICD Comm Channel Select
@@ -35,7 +36,7 @@
  * TODO
  * how to get a random number 4bit 0-15 8bit 0-255
  * How to check enter?
- * save results to statsdisplay
+ * 
  * 
  * 
  *
@@ -47,16 +48,23 @@ bool getBTN2();
 void Menu(int num);
 void statsDisplay(int num,int result);
 void HDisplay(int num);
-long getRand();
+bool Timer4Input();
 
-
+unsigned int stat4bit1,stat4bit2,stat4bit3;
+unsigned int stat8bit1,stat8bit2,stat8bit3;
+static int Time;
 enum state {hd, stats, Hd4Bit,Hd8Bit, Stats4Bit, Stats8Bit,BackHD, BackStats};
 enum state menu;
 int main() {
-    bool BTN;
     init();
+   
     while (1) {
-        switch(menu){
+        if (INTGetFlag(INT_T4)) // Has roll-over occurred? (Has 1 ms passed?)
+        {
+            Time++;
+            INTClearFlag(INT_T4); // Clear flag so we don't respond until it sets again
+        }        switch(menu){
+           
 /*            
  *   This part is for HD            
  */  
@@ -123,7 +131,6 @@ int main() {
                 } 
                 else if (getBTN2()) {
                     statsDisplay(1,0);
-
                 }
                 
                 break;
@@ -133,6 +140,7 @@ int main() {
                     menu = BackStats;
                 } else if (getBTN2()) {
                     statsDisplay(2,0);
+
                     
                 }
                 break;
@@ -165,9 +173,17 @@ void Timer2Init() {
     return;
 }
 void Timer3Init() {
-    // The period of Timer 2 is (16 * 62550)/(10 MHz) = 100 ms (freq = 10 Hz)
+    // The period of Timer 3 is (16 * 62550)/(10 MHz) = 100 ms (freq = 10 Hz)
     OpenTimer3(T3_ON | T3_IDLE_CON | T3_SOURCE_INT | T3_PS_1_16 | T3_GATE_OFF, 62499);
     INTClearFlag(INT_T3);
+    return;
+}
+
+// Initialize Timer4 so that it rolls over 1ms
+void Timer4Init() {
+    // The period of Timer 4 is (16 * 625)/(10 MHz) = 1 ms (freq = 10 Hz)
+    OpenTimer4(T4_ON | T4_IDLE_CON | T4_SOURCE_INT | T4_PS_1_16 | T4_GATE_OFF, 624);
+    INTClearFlag(INT_T4);
     return;
 }
 
@@ -182,6 +198,7 @@ void init(){
     OledInit();
     Timer2Init();
     Timer3Init();
+    Timer4Init();
     initUART(UART1, 10000000, 9600);
 
 
@@ -369,9 +386,7 @@ void Menu(int num){
 
 } //end Menu
 
-void statsDisplay(int num, int result){
-    unsigned int stat4bit1,stat4bit2,stat4bit3;
-    unsigned int stat8bit1,stat8bit2,stat8bit3;
+void statsDisplay(int num, int result){ 
     char bit4buf1[20];
     char bit4buf2[20];
     char bit4buf3[20];
@@ -379,88 +394,188 @@ void statsDisplay(int num, int result){
     char bit8buf2[20];
     char bit8buf3[20];
 
-    if(num ==3){
-        if ((result < stat4bit1)&&(stat4bit1 !=0)){
-            stat4bit1 = result;
-            stat4bit2 = stat4bit1;
-            stat4bit3 = stat4bit2;
-        }
-        else if ((result < stat4bit2)&&(stat4bit2 !=0)){
-            stat4bit2 = result;
-            stat4bit3 = stat4bit2;
-        }
-        else if(( result < stat4bit2)&&(stat4bit2 !=0)){
-            stat4bit3 = result;
-        }
-    }
+
     if (num ==1){
         //display 4 bit best 3 records;
-        sprintf(bit4buf1, "1. %d.%d", result/600, result/10%60);
-        sprintf(bit4buf2, "2. %d.%d", result/600, result/10%60);
-        sprintf(bit4buf3, "3. %d.%d", result/600, result/10%60);
+        sprintf(bit4buf1, "1. %d min %d sec\n", stat4bit1/600, stat4bit1/10%60);
+        sprintf(bit4buf2, "2. %d min %d sec\n", stat4bit2/600, stat4bit2/10%60);
+        sprintf(bit4buf3, "3. %d min %d sec\n", stat4bit3/600, stat4bit3/10%60);
         OledClearBuffer();
         OledSetCursor(0, 0);          
         OledPutString("4-Bit Stats");
         OledSetCursor(0, 1);          
-        OledPutString(bit4buf1);//add some buf here.
+        OledPutString(bit4buf1);//first
         OledSetCursor(0, 2);          
-        OledPutString(bit4buf2); //add some buf here.
+        OledPutString(bit4buf2); //second 
         OledSetCursor(0, 3);          
-        OledPutString(bit4buf3); //add some buf here
+        OledPutString(bit4buf3); //third 
         OledUpdate();
-
         
-
+        while (!getBTN2());
+        Menu(6);    
+        menu=Stats4Bit; 
     }
-    else if (num == 2){
-        //display 8 bit best 3 records;
+        else if (num == 2){
+        //display 4 bit best 3 records;
+        sprintf(bit8buf1, "1. %d min %d sec\n", stat8bit1/600, stat8bit1/10%60);
+        sprintf(bit8buf2, "2. %d min %d sec\n", stat8bit2/600, stat8bit2/10%60);
+        sprintf(bit8buf3, "3. %d min %d sec\n", stat8bit3/600, stat8bit3/10%60);
         OledClearBuffer();
         OledSetCursor(0, 0);          
         OledPutString("8-Bit Stats");
         OledSetCursor(0, 1);          
-        OledPutString("1. - ");//add some buf here.
+        OledPutString(bit8buf1);//first
         OledSetCursor(0, 2);          
-        OledPutString("2. - "); //add some buf here.
+        OledPutString(bit8buf2); //second 
         OledSetCursor(0, 3);          
-        OledPutString("3. - "); //add some buf here
-
+        OledPutString(bit8buf3); //third 
+        OledUpdate();
         
+        while (!getBTN2());
+        Menu(7);    
+        menu=Stats8Bit;
+
+        }
+
+    if(num ==3){
+        if(stat4bit3 !=0){
+            if (result < stat4bit1){
+            stat4bit3 = stat4bit2;
+            stat4bit2 = stat4bit1;
+            stat4bit1 = result;
+            }
+            else if (result < stat4bit2){
+                stat4bit3 = stat4bit2;
+                stat4bit2 = result;
+            }
+            else if(result < stat4bit3){
+                stat4bit3 = result;
+            }
+         }
+         else if (stat4bit3 == 0) {
+                if (stat4bit2 !=0){
+                    if (stat4bit2 < result)
+                        stat4bit3 = result;      //end if
+                    else if (stat4bit1 > result){
+                        stat4bit3 = stat4bit2;
+                        stat4bit2 = stat4bit1;
+                        stat4bit1 = result; } //end else if
+                    else {
+                        stat4bit3 = stat4bit2;
+                        stat4bit2 = result; } //end else 
+                } //end else if 
+                else if (stat4bit2 ==0){
+                    if (stat4bit1 != 0){
+                        if (result < stat4bit1) {
+                            stat4bit2 = stat4bit1;
+                            stat4bit1 = result; } //end if
+                        
+                        else 
+                            stat4bit2 = result;  //end else
+                    } //end if
+                    else if (stat4bit1 ==0){
+                        stat4bit1 =result;   
+                    } //end else if
+                    
+                }
+                
+            }
+    }
+    if(num ==4){
+        if(stat8bit3 !=0){
+            if (result < stat8bit1){
+            stat8bit3 = stat8bit2;
+            stat8bit2 = stat8bit1;
+            stat8bit1 = result;
+            }
+            else if (result < stat8bit2){
+                stat8bit3 = stat8bit2;
+                stat8bit2 = result;
+            }
+            else if(result < stat8bit3){
+                stat8bit3 = result;
+            }
+         }
+         else if (stat8bit3 == 0) {
+                if (stat8bit2 !=0){
+                    if (stat8bit2 < result)
+                        stat8bit3 = result;      //end if
+                    else if (stat8bit1 > result){
+                        stat8bit3 = stat8bit2;
+                        stat8bit2 = stat8bit1;
+                        stat8bit1 = result; } //end else if
+                    else {
+                        stat8bit3 = stat8bit2;
+                        stat8bit2 = result; } //end else 
+                } //end else if 
+                else if (stat8bit2 ==0){
+                    if (stat8bit1 != 0){
+                        if (result < stat4bit1) {
+                            stat8bit2 = stat8bit1;
+                            stat8bit1 = result; } //end if
+                        
+                        else 
+                            stat8bit2 = result;  //end else
+                    } //end if
+                    else if (stat8bit1 ==0){
+                        stat8bit1 =result;   
+                    } //end else if
+                    
+                }
+                
+            }
     }
 
-}
-    
-void HDisplay(int num){
 
-char newchar;
-unsigned int i=0;
-unsigned int j;
-unsigned int k;
-unsigned int countDiff =0;
-char string1[4];
-int string2[8];
-char pwd4bit[] = "1001";
-int string4[8];
-int number;
-int timeCount=0;   
-int enter = 13;
+
+
+
+    
+
+    
+}
+void HDisplay(int num)
+{
+	Time = Time*rand();
+
+	char newchar;
+	int passwd;
+	unsigned int i=0;
+	unsigned int j;
+	unsigned int k;
+	unsigned int countDiff =0;
+	char pwd_uart4[4];
+	char pwd_uart8[8];
+	char pwd4bit[4];
+	char pwd8bit[8];
+	int random;
+	int timeCount=0;   
+	int enter = 13;
+
+
 
     if (num ==1){
-        number = getRand(4);
-        for (j=0; j<4; j++){
-        //pwd4bit[j] = number%2;
-        number = number/2;
-        }
+
+
+       for (j=0; j<4; j++){
+            Time = Time/2;
+            random = Time%2;
+            if (random & 0x01)
+                pwd4bit[j] = '1';
+            else 
+                pwd4bit[j] = '0'; }
+  
         char buf[20];               // Temporary string for OLED display  
-        OledClearBuffer();
-                //display 4 bit best 3 records;
+        OledClearBuffer();          //display 4 bit best 3 records;
         OledSetCursor(0, 0);          // upper-left corner of display
         OledPutString("4-Bit HD");
         OledSetCursor(0, 1);          
-        OledPutString("****");//add some buf here.
+        OledPutString("****");
         OledUpdate();
         
         
         while(i<4){ 
+
 
             if (INTGetFlag(INT_T3)){            
                 INTClearFlag(INT_T3);
@@ -474,7 +589,7 @@ int enter = 13;
             if((UARTReceivedDataIsAvailable (UART1))&&(i<4)) {
                newchar = UARTGetDataByte (UART1);
                if((newchar == '0')||(newchar == '1')) {
-                    string1[i] = newchar;
+                    pwd_uart4[i] = newchar;
                     OledSetCursor(i, 1);
                     OledPutChar(newchar);
                     OledUpdate();
@@ -489,7 +604,7 @@ int enter = 13;
             while ((i==4)) {
                 countDiff = 0;
                 for (k=0; k<4; k++){
-                    if (string1[k] != pwd4bit[k]){
+                    if (pwd_uart4[k] != pwd4bit[k]){
                         countDiff++;
                     }
                 }
@@ -532,10 +647,10 @@ int enter = 13;
                 if (countDiff == 0){
                     LATGCLR = 0XF000;
                     statsDisplay(3,timeCount);
+                    while (!getBTN2()){}
                     menu = hd;
                     Menu(1);
                     i=5;
-                    while (!getBTN2()){} //why not stop here?
                     }
             }
         }
@@ -543,13 +658,20 @@ int enter = 13;
     }     
     
     else if (num == 2){
+       for (j=0; j<8; j++){
+            Time = Time/2;
+            random = Time%2;
+            if (random & 0x01)
+                pwd8bit[j] = '1';
+            else 
+                pwd8bit[j] = '0'; }
         OledClearBuffer();
         char buf[20];               // Temporary string for OLED display  
       
         OledSetCursor(0, 0);          // upper-left corner of display
         OledPutString("8-Bit HD");
         OledSetCursor(0, 1);          
-        OledPutString("********");//add some buf here.
+        OledPutString("********");
         OledUpdate();
         
         while(i<8) {
@@ -569,7 +691,7 @@ int enter = 13;
             if((UARTReceivedDataIsAvailable (UART1))&&(i<8)) {
                newchar = UARTGetDataByte (UART1);
                if((newchar == '0')||(newchar == '1')) {
-                    string2[i] = newchar;
+                    pwd_uart8[i] = newchar;
                     OledSetCursor(i, 1);
                     OledPutChar(newchar);
                     OledUpdate();
@@ -578,6 +700,91 @@ int enter = 13;
                 OledSetCursor(0,2);
                 OledPutChar(newchar);
                 OledUpdate();
+         
+        while ((i==8)) {
+                countDiff = 0;
+                for (k=0; k<8; k++){
+                    if (pwd_uart8[k] != pwd8bit[k]){
+                        countDiff++;
+                    }
+                }
+
+
+                if (countDiff ==1) {
+                    LATGCLR = 0XF000;
+                    LATGSET = 0x1000;
+                    i = 0;
+                    OledSetCursor(0, 1);
+                    OledPutString("********");
+                    OledUpdate();
+                }
+                else if (countDiff ==2) {
+                    LATGCLR = 0XF000;
+                    LATGSET = 0x2000;
+                    i = 0;
+                    OledSetCursor(0, 1);
+                    OledPutString("********");
+                    OledUpdate();
+                }
+                else if (countDiff ==3) {
+                    LATGCLR = 0XF000;
+                    LATGSET = 0x3000;  
+                    i = 0;
+                    OledSetCursor(0, 1);
+                    OledPutString("********");
+                    OledUpdate();
+                }
+                else if (countDiff ==4){
+                    LATGCLR = 0XF000;
+                    LATGSET = 0x4000;
+                    i = 0;
+                    OledSetCursor(0, 1);
+                    OledPutString("********");
+                    OledUpdate();
+                }
+                else if (countDiff ==5) {
+                    LATGCLR = 0XF000;
+                    LATGSET = 0x5000;
+                    i = 0;
+                    OledSetCursor(0, 1);
+                    OledPutString("********");
+                    OledUpdate();
+                }
+                else if (countDiff ==6) {
+                    LATGCLR = 0XF000;
+                    LATGSET = 0x6000;  
+                    i = 0;
+                    OledSetCursor(0, 1);
+                    OledPutString("********");
+                    OledUpdate();
+                }
+                else if (countDiff ==7){
+                    LATGCLR = 0XF000;
+                    LATGSET = 0x7000;
+                    i = 0;
+                    OledSetCursor(0, 1);
+                    OledPutString("********");
+                    OledUpdate();
+                }
+                else if (countDiff ==8){
+                    LATGCLR = 0XF000;
+                    LATGSET = 0x8000;
+                    i = 0;
+                    OledSetCursor(0, 1);
+                    OledPutString("********");
+                    OledUpdate();
+                }
+
+                
+                if (countDiff == 0){
+                    LATGCLR = 0XF000;
+                    statsDisplay(4,timeCount);
+                    while (!getBTN2()){}
+                    menu = hd;
+                    Menu(1);
+                    i=9;
+                    }
+            }
                
                 
             }
@@ -585,21 +792,16 @@ int enter = 13;
         }
     }//end while
 }
+/*
+int Time(){
+    int time =0;
+    while(Timer4Input())
+        time++;
+
+    return time;
+}*/
 
 
 
-long getRand(int num){
-    int i;
-    long bit_out;
-    if (num == 4){
-        for(i = 0; i<3; i++)
-            bit_out = bit_out | (rand()%2 << i);
-    }
-    else if (num == 8){
-        for(i = 0; i<7; i++)
-            bit_out = bit_out | (rand()%2 << i);
-        
-    } 
-    
-    return bit_out;
-}
+
+// srand(Time());
