@@ -1,13 +1,17 @@
 ////////////////////////////////////////////////////////////////////////////////////
 // ECE 2534:        Lab 2
 // File name:       Liu_Beichen_bcliu430.c
-// Description:     Test the Digilent board by writing a short message to the OLED.
-//                  Also display a counter that updates every 100 milliseconds.
+// Description:     This project is written to find the Hamming distance between the
+//                  user input from uart and the system-generated random number;
+//                  Menu()         is used to display all the menu
+//                  HDisplay()     is used to find the hamming distance. using the 
+//                                 LED on the board to display the hamming distance
+//                  statsDisplay() is used to save result and display result
 // Resources:       main.c uses Timer2 to measure elapsed time.
-//					delay.c uses Timer1 to provide delays with increments of 1 ms.
-//					PmodOLED.c uses SPI1 for communication with the OLED.
+//                  delay.c uses Timer1 to provide delays with increments of 1 ms.
+//		    PmodOLED.c uses SPI1 for communication with the OLED.
 // Written by:      Beichen Liu 
-// Last modified:   10/6/2016
+// Last modified:   10/12/2016
 
 #include <stdio.h>                      // for sprintf()
 #include <stdbool.h>
@@ -34,10 +38,7 @@
 
 /*
  * TODO
- * where to put the  check "enter"?
- * 
- * 
- * 
+ * nothing TODO yahh!!
  *
  */
 
@@ -55,26 +56,27 @@ static int Time;
 enum state {hd, stats, Hd4Bit,Hd8Bit, Stats4Bit, Stats8Bit,BackHD, BackStats};
 enum state menu;
 int main() {
+
     init();
    
     while (1) {
-        if (INTGetFlag(INT_T4)) // Has roll-over occurred? (Has 1 ms passed?)
-        {
+        if (INTGetFlag(INT_T4)) { // Has roll-over occurred? (Has 1 ms passed?)
+        
             Time++;
-            INTClearFlag(INT_T4); // Clear flag so we don't respond until it sets again
-        }        switch(menu){
-           
+            INTClearFlag(INT_T4); // a Timer used to generate random number
+        }        
+    switch(menu){
 /*            
  *   This part is for HD            
  */  
             case hd: // main menu arroy at HD
                 if(getBTN1()) {
                     Menu(2); 
-                    menu= stats; 
+                    menu= stats;   
                 }
-                else if(getBTN2()){
+                else if(getBTN2()) {
                     Menu(3);
-                    menu = Hd4Bit;
+                    menu = Hd4Bit; 
                 }
                 break;
                 
@@ -139,7 +141,6 @@ int main() {
                     menu = BackStats;
                 } else if (getBTN2()) {
                     statsDisplay(2,0);
-
                     
                 }
                 break;
@@ -157,7 +158,6 @@ int main() {
                 break;
 
 //end statiscs display
-
         } //END SWITCH
     }//END WHILE
         
@@ -172,7 +172,7 @@ void Timer2Init() {
     return;
 }
 void Timer3Init() {
-    // The period of Timer 3 is (16 * 62550)/(10 MHz) = 100 ms (freq = 10 Hz)
+    // The period of Timer 3 is (16 * 62500)/(10 MHz) = 100 ms (freq = 10 Hz)
     OpenTimer3(T3_ON | T3_IDLE_CON | T3_SOURCE_INT | T3_PS_1_16 | T3_GATE_OFF, 62499);
     INTClearFlag(INT_T3);
     return;
@@ -186,13 +186,13 @@ void Timer4Init() {
     return;
 }
 
-void init(){
+void init(){ //initialization
        
     TRISGSET = 0xC0;     // For BTN 1 and 2: set pin 6 and 7 to 1 as input 
     TRISGCLR = 0xF000;   // For LEDs: configure PortG pin for output
     ODCGCLR  = 0xF000;   // For LEDs: configure as normal output (not open drain)
-    LATGSET  = 0xf000;
-    // Initialize PmodOLED, also Timer1 and SPI1
+    LATGSET  = 0xf000;   // all LEDs are on for 5 seconds;
+    // initialize functions
     DelayInit();
     OledInit();
     Timer2Init();
@@ -204,9 +204,10 @@ void init(){
     unsigned int timeCount=0;
     
     
-         // Send a welcome message to the OLED display
+    // Send a welcome message to the OLED display
+    // initialization message
     OledClearBuffer();
-    OledSetCursor(0, 0);          // upper-left corner of display
+    OledSetCursor(0, 0);          // column 0, row 0 of display
     OledPutString("ECE 2534");
     OledSetCursor(0, 1);          // column 0, row 1 of display
     OledPutString("Lab 2");
@@ -214,7 +215,7 @@ void init(){
     OledPutString("Security Sim");
     OledUpdate(); 
     
-    while (timeCount <= 1000) {
+    while (timeCount <= 5000) { //delay for 5 second
         if (INTGetFlag(INT_T2)) // Has roll-over occurred? (Has 1 ms passed?)
         {
             timeCount++;
@@ -223,11 +224,10 @@ void init(){
 
     }
     
-    LATGCLR  = 0xf000;
+    LATGCLR  = 0xf000; // testing LEDs finishes
 
-    menu=hd;
+    menu=hd; //state machine goes to the first state
     Menu(1);
-    
 }
 
 bool getBTN1() {
@@ -290,7 +290,7 @@ bool getBTN2() {
 
 
 
-void Menu(int num){
+void Menu(int num){ //These are all the menus
     if(num ==1){
         OledClearBuffer();
         OledSetCursor(0, 0); // upper-left corner of display
@@ -385,14 +385,9 @@ void Menu(int num){
 
 } //end Menu
 
-void statsDisplay(int num, int result){ 
-    char bit4buf1[20];
-    char bit4buf2[20];
-    char bit4buf3[20];
-    char bit8buf1[20];
-    char bit8buf2[20];
-    char bit8buf3[20];
-
+void statsDisplay(int num, int result){ // Here we can display all the results
+    char bit4buf1[20], bit4buf2[20], bit4buf3[20];
+    char bit8buf1[20], bit8buf2[20], bit8buf3[20];
 
     if (num ==1){
         //display 4 bit best 3 records;
@@ -410,11 +405,11 @@ void statsDisplay(int num, int result){
         OledPutString(bit4buf3); //third 
         OledUpdate();
         
-        while (!getBTN2());
+        while (!getBTN2()); // wait for BTN2 push, if pushed go to main menu
         Menu(6);    
         menu=Stats4Bit; 
     }
-        else if (num == 2){
+    else if (num == 2){
         //display 4 bit best 3 records;
         sprintf(bit8buf1, "1. %d min %d sec\n", stat8bit1/600, stat8bit1/10%60);
         sprintf(bit8buf2, "2. %d min %d sec\n", stat8bit2/600, stat8bit2/10%60);
@@ -430,18 +425,18 @@ void statsDisplay(int num, int result){
         OledPutString(bit8buf3); //third 
         OledUpdate();
         
-        while (!getBTN2());
+        while (!getBTN2()); // wait for BTN2 push, if pushed go to main menu
         Menu(7);    
         menu=Stats8Bit;
 
-        }
+    }
 
-    if(num ==3){
+    if(num ==3){ //save data for 4 bit 
         if(stat4bit3 !=0){
             if (result < stat4bit1){
-            stat4bit3 = stat4bit2;
-            stat4bit2 = stat4bit1;
-            stat4bit1 = result;
+                stat4bit3 = stat4bit2;
+                stat4bit2 = stat4bit1;
+                stat4bit1 = result;
             }
             else if (result < stat4bit2){
                 stat4bit3 = stat4bit2;
@@ -480,12 +475,12 @@ void statsDisplay(int num, int result){
                 
             }
     }
-    if(num ==4){
+    if(num ==4){ //save data for 8 bit
         if(stat8bit3 !=0){
             if (result < stat8bit1){
-            stat8bit3 = stat8bit2;
-            stat8bit2 = stat8bit1;
-            stat8bit1 = result;
+                stat8bit3 = stat8bit2;
+                stat8bit2 = stat8bit1;
+                stat8bit1 = result;
             }
             else if (result < stat8bit2){
                 stat8bit3 = stat8bit2;
@@ -520,42 +515,32 @@ void statsDisplay(int num, int result){
                         stat8bit1 =result;   
                     } //end else if
                     
-                }
+               }
                 
-            }
+         }
     }
-
-
-
-
-
-    
-
     
 }
+
 void HDisplay(int num)
 {
-	Time = Time*rand();
-
-	char newchar;
-	int passwd;
-	unsigned int i=0;
-	unsigned int j;
-	unsigned int k;
-	unsigned int countDiff =0;
-	char pwd_uart4[4];
-	char pwd_uart8[8];
-	char pwd4bit[4];
-	char pwd8bit[8];
-	int random;
-	int timeCount=0;   
-	int enter = 13;
+    char newchar; // uart input
+    unsigned int a=0; 
+    unsigned int i=0; 
+    unsigned int j;
+    unsigned int k;
+    unsigned int countDiff =0; // hamming distance
+    char pwd_uart4[4]; // user input string
+    char pwd_uart8[8]; // user input string
+    char pwd4bit[4];   // 4bit random number
+    char pwd8bit[8];   // 8bit random number
+    int random;
+    int timeCount=0;   
+    int enter = 13;
 
 
 
-    if (num ==1){
-
-
+    if (num ==1){ // hamming distance 4 bit
        for (j=0; j<4; j++){
             Time = Time/2;
             random = Time%2;
@@ -572,10 +557,7 @@ void HDisplay(int num)
         OledPutString("****");
         OledUpdate();
         
-        
-        while(i<4){ 
-
-
+        while(i<=4){ 
             if (INTGetFlag(INT_T3)){            
                 INTClearFlag(INT_T3);
                 timeCount++; }
@@ -584,6 +566,7 @@ void HDisplay(int num)
             sprintf(buf, "%d: %d.%d", timeCount/600, timeCount/10%60, timeCount%10);
             OledSetCursor(0, 3);
             OledPutString(buf);
+            OledUpdate();
 
             if((UARTReceivedDataIsAvailable (UART1))&&(i<4)) {
                newchar = UARTGetDataByte (UART1);
@@ -600,87 +583,62 @@ void HDisplay(int num)
           
             }
             //while(newchar != enter){} while not enter
-            while ((i==4)) {
-                countDiff = 0;
-                for (k=0; k<4; k++){
-                    if (pwd_uart4[k] != pwd4bit[k]){
-                        countDiff++;
+            if((UARTReceivedDataIsAvailable (UART1))&&(UARTGetDataByte (UART1)==enter)&&(i=4)){
+                while (i==4) {
+                    countDiff = 0;
+                    for (k=0; k<4; k++){
+                        if (pwd_uart4[k] != pwd4bit[k]){
+                            countDiff++;
+                        }
                     }
-                }
-
-
-                if (countDiff ==1) {
-                    LATGCLR = 0XF000;
-                    LATGSET = 0x1000;
-                    i = 0;
-                    OledSetCursor(0, 1);
-                    OledPutString("****"); //add some buf here.
-                    OledUpdate();
-                }
-                else if (countDiff ==2) {
-                    LATGCLR = 0XF000;
-                    LATGSET = 0x2000;
-                    i = 0;
-                    OledSetCursor(0, 1);
-                    OledPutString("****"); //add some buf here.
-                    OledUpdate();
-                }
-                else if (countDiff ==3) {
-                    LATGCLR = 0XF000;
-                    LATGSET = 0x3000;  
-                    i = 0;
-                    OledSetCursor(0, 1);
-                    OledPutString("****"); //add some buf here.
-                    OledUpdate();
-                }
-                else if (countDiff ==4){
-                    LATGCLR = 0XF000;
-                    LATGSET = 0x4000;
-                    i = 0;
-                    OledSetCursor(0, 1);
-                    OledPutString("****"); //add some buf here.
-                    OledUpdate();
-                }
-
-                
-                if (countDiff == 0){
-                    LATGCLR = 0XF000;
-                    statsDisplay(3,timeCount);
-                    while (!getBTN2()){}
-                    menu = hd;
-                    Menu(1);
-                    i=5;
+                    if (countDiff !=0){
+                        for (a=0; a<4; a++){
+                            LATGCLR = 0XF000;
+                            LATGSET = LATGSET | ( countDiff << 12 );
+                            i = 0;
+                            OledSetCursor(0, 1);
+                            OledPutString("****"); //add some buf here.
+                            OledUpdate();
+                        }
                     }
-            }
-        }
+                    else {
+                        LATGCLR = 0XF000;
+                        statsDisplay(3,timeCount);
+                        while (!getBTN2()){}
+                        menu = hd;
+                        Menu(1);
+                        i=5;
+                    }
+                }   
+            }   
+        } //end while
  
     }     
     
     else if (num == 2){
-       for (j=0; j<8; j++){
+        for (j=0; j<8; j++){
             Time = Time/2;
             random = Time%2;
             if (random & 0x01)
                 pwd8bit[j] = '1';
             else 
-                pwd8bit[j] = '0'; }
-        OledClearBuffer();
+                pwd8bit[j] = '0'; 
+        }
+
+  
         char buf[20];               // Temporary string for OLED display  
-      
+        OledClearBuffer();
         OledSetCursor(0, 0);          // upper-left corner of display
         OledPutString("8-Bit HD");
         OledSetCursor(0, 1);          
         OledPutString("********");
         OledUpdate();
         
-        while(i<8) {
-            if (INTGetFlag(INT_T3)){            
-                // Timer2 has rolled over, so increment count of elapsed time
+        while(i<=8) {
+            if (INTGetFlag(INT_T3)){   // Timer2 has rolled over, so increment count of elapsed time
                 INTClearFlag(INT_T3);
                 timeCount++;
-
             }
-
                 // Display elapsed time in units of seconds, with decimal point
             sprintf(buf, "%d: %d.%d", timeCount/600, timeCount/10%60, timeCount%10);
             OledSetCursor(0, 3);
@@ -699,108 +657,37 @@ void HDisplay(int num)
                 OledSetCursor(0,2);
                 OledPutChar(newchar);
                 OledUpdate();
-         
-        while ((i==8)) {
-                countDiff = 0;
-                for (k=0; k<8; k++){
-                    if (pwd_uart8[k] != pwd8bit[k]){
-                        countDiff++;
-                    }
-                }
-
-
-                if (countDiff ==1) {
-                    LATGCLR = 0XF000;
-                    LATGSET = 0x1000;
-                    i = 0;
-                    OledSetCursor(0, 1);
-                    OledPutString("********");
-                    OledUpdate();
-                }
-                else if (countDiff ==2) {
-                    LATGCLR = 0XF000;
-                    LATGSET = 0x2000;
-                    i = 0;
-                    OledSetCursor(0, 1);
-                    OledPutString("********");
-                    OledUpdate();
-                }
-                else if (countDiff ==3) {
-                    LATGCLR = 0XF000;
-                    LATGSET = 0x3000;  
-                    i = 0;
-                    OledSetCursor(0, 1);
-                    OledPutString("********");
-                    OledUpdate();
-                }
-                else if (countDiff ==4){
-                    LATGCLR = 0XF000;
-                    LATGSET = 0x4000;
-                    i = 0;
-                    OledSetCursor(0, 1);
-                    OledPutString("********");
-                    OledUpdate();
-                }
-                else if (countDiff ==5) {
-                    LATGCLR = 0XF000;
-                    LATGSET = 0x5000;
-                    i = 0;
-                    OledSetCursor(0, 1);
-                    OledPutString("********");
-                    OledUpdate();
-                }
-                else if (countDiff ==6) {
-                    LATGCLR = 0XF000;
-                    LATGSET = 0x6000;  
-                    i = 0;
-                    OledSetCursor(0, 1);
-                    OledPutString("********");
-                    OledUpdate();
-                }
-                else if (countDiff ==7){
-                    LATGCLR = 0XF000;
-                    LATGSET = 0x7000;
-                    i = 0;
-                    OledSetCursor(0, 1);
-                    OledPutString("********");
-                    OledUpdate();
-                }
-                else if (countDiff ==8){
-                    LATGCLR = 0XF000;
-                    LATGSET = 0x8000;
-                    i = 0;
-                    OledSetCursor(0, 1);
-                    OledPutString("********");
-                    OledUpdate();
-                }
-
-                
-                if (countDiff == 0){
-                    LATGCLR = 0XF000;
-                    statsDisplay(4,timeCount);
-                    while (!getBTN2()){}
-                    menu = hd;
-                    Menu(1);
-                    i=9;
-                    }
             }
-               
-                
-            }
-        
-        }
+            
+            if((UARTReceivedDataIsAvailable (UART1))&&(UARTGetDataByte (UART1)==enter)&&(i=8)){
+                while (i==8) {
+                    countDiff = 0;
+                    for (k=0; k<8; k++){
+                        if (pwd_uart8[k] != pwd8bit[k]){
+                            countDiff++;
+                        }
+                    }
+                    if (countDiff !=0){
+                        for (a=0; a<8; a++){
+                            LATGCLR = 0XF000;
+                            LATGSET = LATGSET | ( countDiff << 12 );
+                            i = 0;
+                            OledSetCursor(0, 1);
+                            OledPutString("********"); //add some buf here.
+                            OledUpdate();
+                        }
+                    }
+                    else {
+                        LATGCLR = 0XF000;
+                        statsDisplay(4,timeCount);
+                        while (!getBTN2()){}
+                        menu = hd;
+                        Menu(1);
+                        i=9;
+                    }
+                }   
+            } 
+        }        
     }//end while
 }
-/*
-int Time(){
-    int time =0;
-    while(Timer4Input())
-        time++;
 
-    return time;
-}*/
-
-
-
-
-// srand(Time());
