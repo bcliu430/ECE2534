@@ -33,9 +33,6 @@ int main() {
     DelayInit();
     OledInit();
 
-    // Grandma's Step #3
-    // Initial Timer2
-    initTimer23();
 
 
     // Send a welcome message to the OLED display
@@ -46,7 +43,7 @@ int main() {
     while (1){
    
         char buf[17];
-        sprintf(buf, "%d seconds", timer2_count);
+        sprintf(buf, "%d seconds", timer_count);
         OledSetCursor(5,2);
         OledPutString(buf); 
         OledUpdate();
