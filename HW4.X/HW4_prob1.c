@@ -25,7 +25,7 @@
 #include "myLEDUpdate.h"
 
 
-unsigned int timer_count = 0;
+unsigned int timer2_count = 0;
 
 int main() {
 
