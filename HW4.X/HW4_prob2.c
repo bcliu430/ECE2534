@@ -25,7 +25,7 @@
 #include "myLEDUpdate.h"
 
 
-unsigned int timer2_count = 0;
+unsigned int timer_count = 0;
 
 int main() {
 
@@ -35,7 +35,7 @@ int main() {
 
     // Grandma's Step #3
     // Initial Timer2
-    initTimer2();
+    initTimer23();
 
 
     // Send a welcome message to the OLED display
@@ -44,11 +44,7 @@ int main() {
     OledPutString("Time Elapsed = ");
     OledUpdate();
     while (1){
-        if(INTGetFlag(INT_T2)){
-            timer2_count++;
-            INTClearFlag(INT_T2);
-        }
-    
+   
         char buf[17];
         sprintf(buf, "%d seconds", timer2_count);
         OledSetCursor(5,2);
@@ -60,15 +56,22 @@ int main() {
     }
 }
 
-void initTimer2() {
+void initTimer23() {
     // Configure Timer 2 to request a real-time interrupt once per millisecond.
-    // The period of Timer 2 is (256 * 39062)/(10 MHz) = 1ms.
-    OpenTimer2(T2_ON | T2_IDLE_CON | T2_SOURCE_INT | T2_PS_1_256 | T2_GATE_OFF, 39061);
-    INTClearFlag(INT_T2);
-//    OpenTimer2(T2_ON | T2_IDLE_CON | T2_SOURCE_INT | T2_PS_1_256 | T2_GATE_OFF, 39061);
-//    INTClearFlag(INT_T2);
+    // The period of Timer 2 is (256 * 39062)/(10 MHz) = 1s.
+    // 0x9895 =39061
+    OpenTimer23(T2_ON | T2_IDLE_CON | T2_SOURCE_INT | T2_PS_1_256 | T2_32BIT_MODE_ON, 0x00009895);
+    INTSetVectorPriority(INT_TIMER_2_VECTOR, INT_PRIORITY_LEVEL_4);
+    INTClearFlag(INT_T3);
 
 
+
+}
+
+void __ISR(_TIMER_2_VECTOR, IPL4AUTO) _Timer2Handler(void) {
+    DBG_ON(MASK_DBG0); // Use debugging to see when the ISR is called on the LA/osc
+    timer_count++; // Increment the millisecond counter.
+    INTClearFlag(INT_T3); // Clear the Timer2 interrupt flag.
 }
 
 
