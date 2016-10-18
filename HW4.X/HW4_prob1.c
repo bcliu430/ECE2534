@@ -45,12 +45,12 @@ int main() {
     OledUpdate();
     while (1){
         if(INTGetFlag(INT_T3)){
-            timer2_count++;
+            timer_count++;
             INTClearFlag(INT_T3);
         }
     
         char buf[17];
-        sprintf(buf, "%d seconds", timer2_count);
+        sprintf(buf, "%d seconds", timer_count);
         OledSetCursor(5,2);
         OledPutString(buf); 
         OledUpdate();
