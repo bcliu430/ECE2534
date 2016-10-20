@@ -1,17 +1,11 @@
 ////////////////////////////////////////////////////////////////////////////////////
-// ECE 2534:        Timer ISR Program Example
+// ECE 2534:        hw4_prob1.c
 //
-// Description:     This program use the Timer2 ISR to measure milliseconds.
-//                  The example follows the five-step  "Grandma's ISR recipe"
-//                  as introduced in class.
+// Description:     This program is written to simulate a simple timmer using 
+//                  INTGetFlag() by configureing Timer23 to trigger 
+//                  the interrupt.
 //
-//                  The debugging is set up to show the following information:
-//                      PORTE bit 0: Timer2 ISR
-//                      PORTE bit 1: When LED1 is on
-//                      PORTE bit 2: The OLED being updated
-//                      PORTE bit 3: When the PWM duty cycle (in the LED code) resets
-//
-// Last modified:   9/23/2016 PEP
+// Last modified:   10/20/2016 Beichen Liu
 
 #include <stdio.h>                      // for sprintf()
 #include <plib.h>                       // Peripheral Library
