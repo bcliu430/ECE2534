@@ -10,18 +10,7 @@
 //                  Use BTN2 to confirm or enter.
 //                  The goal of this game is to get the desired score
 //                  Enjoy!
-// Written by:      Beichen Liu
-//                   LL          LL
-//                    LL         LL
-//               LLLLLLLLLLL     LL
-//                L       L      LL
-//                  L    L   LL  LL
-//                   L  L    LL  LL
-//                    LL     LL  LL
-//                   L  L        LL
-//                  L    L    LL LL
-//                 L      L     LLL
-//
+// Written by:      Beichen Liu 刘北辰
 // Last modified:   21 October 2016 
 
 #include <stdio.h>                      // for sprintf()
