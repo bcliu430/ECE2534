@@ -23,8 +23,8 @@
       <itemPath>OledGrph.c</itemPath>
       <itemPath>PmodOLED.c</itemPath>
       <itemPath>delay.c</itemPath>
-      <itemPath>Liu_Beichen_bcliu430.c</itemPath>
       <itemPath>myUART.c</itemPath>
+      <itemPath>Liu_Beichen_Lab2.c</itemPath>
     </logicalFolder>
     <logicalFolder name="ExternalFiles"
                    displayName="Important Files"
@@ -32,6 +32,9 @@
       <itemPath>Makefile</itemPath>
     </logicalFolder>
   </logicalFolder>
+  <sourceRootList>
+    <Elem>../Lab3.X</Elem>
+  </sourceRootList>
   <projectmakefile>Makefile</projectmakefile>
   <confs>
     <conf name="default" type="2">

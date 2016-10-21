@@ -26,7 +26,7 @@
       <itemPath>PmodOLED.c</itemPath>
       <itemPath>delay.c</itemPath>
       <itemPath>myLEDUpdate.c</itemPath>
-      <itemPath>HW4_prob2.c</itemPath>
+      <itemPath>HW4_prob1.c</itemPath>
     </logicalFolder>
     <logicalFolder name="ExternalFiles"
                    displayName="Important Files"
@@ -168,6 +168,9 @@
         <property key="save-temps" value="false"/>
         <property key="wpo-lto" value="false"/>
       </C32Global>
+      <PK3OBPlatformTool>
+        <property key="firmware.download.all" value="false"/>
+      </PK3OBPlatformTool>
     </conf>
   </confs>
 </configurationDescriptor>

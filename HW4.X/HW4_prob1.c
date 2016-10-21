@@ -19,7 +19,7 @@
 #include "myLEDUpdate.h"
 
 
-unsigned int timer2_count = 0;
+unsigned int timer_count = 0;
 
 int main() {
 
@@ -27,10 +27,11 @@ int main() {
     DelayInit();
     OledInit();
 
-    // Grandma's Step #3
-    // Initial Timer2
-    initTimer();
-
+    // Configure Timer 23 to request a real-time interrupt once per millisecond.
+    // The period of Timer 2 is (256 * 39062)/(10 MHz) = 1ms.
+    // 0x9895 =39061
+    OpenTimer23(T2_ON | T2_IDLE_CON | T2_SOURCE_INT | T2_PS_1_256 | T2_32BIT_MODE_ON, 0x00009895);
+    INTClearFlag(INT_T3);
 
     // Send a welcome message to the OLED display
     OledClearBuffer();
@@ -53,16 +54,3 @@ int main() {
 
     }
 }
-
-void initTimer() {
-    // Configure Timer 2 to request a real-time interrupt once per millisecond.
-    // The period of Timer 2 is (256 * 39062)/(10 MHz) = 1ms.
-    // 0x9895 =39061
-    OpenTimer23(T2_ON | T2_IDLE_CON | T2_SOURCE_INT | T2_PS_1_256 | T2_32BIT_MODE_ON, 0x00009895);
-    INTClearFlag(INT_T3);
-
-
-
-}
-
-
