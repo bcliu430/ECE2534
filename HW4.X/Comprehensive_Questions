@@ -1,0 +1,21 @@
+Comprehension Questions for Problems 1 and 2 (20 points)
+1. In the ISR given in the Timer ISR Example, the function “INTGetFlag()” is not called. Should it be called?
+Justify your answer.
+
+	No, INTGetFlag() is not called. It should not be called because we use interrupt service routine to check if hte roll over happenes. 
+
+2. In Program 1 (the poll-driven counter), how does the behavior of the program differ when you comment the “interrupt” acknowledge (i.e., the call to “INTClearFlag()”) out of your main routine? Why does this happen? 
+
+	It might be too often or not too often, so it is not an effecient way, because the processor continuously check the I/O device. 
+
+3. In Program 2 (the interrupt-driven counter), how does the behavior of the program differ when you comment the interrupt acknowledge out of your interrupt service routine? Why does this happen?
+
+	Processor can do other tasks while waiting for the last data transfer, becasue interrupt service routine interrupts processor when it is ready for data transfer.
+
+4. If the behavior that results from commenting out the interrupt acknowledge of Program 2 differs from the behavior that results from doing so in Program 1, explain the difference.
+
+	For problem1, the processor check the I/O device continuously because of the Interrupt, and in the problem2, the processor only check the I/O device once it is ready to transer. So, Interrupt Serveice routine is a more efficient way to interrupt.
+
+5. Why do you think Programs 1 and 2 used a 32-bit timer instead of a 16-bit timer? (Your answer should focus on why a 32-bit timer would provide better results or otherwise do something that a 16-bit timer would be incapable of doing.)
+
+	As we did in HW3, using a 32-bit timer can have a longer rollover period. A 16-bit timer can only have 1.68 second period, but a 32-bit timer has a much longer period
