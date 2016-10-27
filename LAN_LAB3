@@ -1,0 +1,88 @@
+////////////////////////////////////////////////////////////////////////////////////
+// ECE 2534:        Lab 3                                                         
+// Name:            HUIFENG LAN                                                        
+// File name:       main.c                                                        
+// Description:     
+// Resources:       
+                                                   
+// Last modified:   10/30/2016                                                   
+////////////////////////////////////////////////////////////////////////////////////
+#define GetPBCClock() 10000000
+#define BaudRate 9600
+#define _PLIB_DISABLE_LEGACY
+#include <plib.h>
+#include <stdlib.h>                
+#include "PmodOLED.h"                           
+#include "OledChar.h"                            
+#include "timer.h"
+#include "int.h"            
+#include "OledGrph.h"            
+#include "delay.h"                       
+#include "Digilent_config.h" 
+#include "adc10.h"
+#define _PLIB_DISABLE_LEGACY  //legacy code not allowed in this course
+#define BUTTON1 1<<6
+#define BUTTON2 1<<7
+#define BUTTON3 1<<0
+#define LEDS 0xF<<12
+void init();
+void timer();
+int main(){
+     struct 
+    {
+       int tenths;
+       int seconds;
+       int minutes;
+    } timeWait ={0,0,0};
+    enum {wait_5s,gameMenu}mode=wait_5s;
+    timer();
+    init();
+    while(1){
+        switch (mode){
+        case wait_5s:
+            if(INTGetFlag(INT_T2)){
+                INTClearFlag(INT_T2);
+                timeWait.tenths++;
+            }
+            if(timeWait.tenths>=10){
+                timeWait.tenths=0;
+                timeWait.seconds++; 
+             }
+            if (timeWait.seconds>5){
+                timeWait.seconds=0;
+                mode=gameMenu;
+                
+            }
+        case gameMenu:
+            
+                
+    }
+    } 
+    
+
+}
+void init(){
+  DelayInit();
+  OledInit();
+  Timer();
+  OledClearBuffer();
+  OledSetCursor(0, 0);          
+  OledPutString("Pong Game");
+  OledSetCursor(0, 2);     
+  OledPutString("By:HuiFeng Lan");
+  OledSetCursor(0,4);
+  OledPutString("ECE 2534 Lab3");
+  OledUpdate();
+}
+void Timer() {
+    // The period of Timer 2 is (16 * 625)/(10 MHz) = 1 ms (freq = 10 Hz)
+    OpenTimer2(T2_ON | T2_IDLE_CON | T2_SOURCE_INT | T2_PS_1_16 | T2_GATE_OFF, 15625);
+    INTClearFlag(INT_T2);
+    // The period of Timer 3 is (256 * 39032)/(10 MHz) = 1 s (freq = 1 Hz)
+    OpenTimer3(T3_ON | T3_IDLE_CON | T3_SOURCE_INT | T3_PS_1_256 | T3_GATE_OFF, 39061);
+    INTClearFlag(INT_T3); 
+    // The period of Timer 4 is (16 * 625)/(10 MHz) = 1 ms (freq = 10 Hz)
+    OpenTimer4(T4_ON | T4_IDLE_CON | T4_SOURCE_INT | T4_PS_1_16 | T4_GATE_OFF, 624);
+    INTClearFlag(INT_T4);
+    return;
+}
