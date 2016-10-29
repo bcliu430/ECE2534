@@ -10,8 +10,12 @@
 //                  Use BTN2 to confirm or enter.
 //                  The goal of this game is to get the desired score
 //                  Enjoy!
+//
 // Written by:      Beichen Liu 刘北辰
-// Last modified:   21 October 2016 
+//
+// Last modified:   10.21.2016
+//
+// Version:         ver.10-21-2016 create file, setup menu
 
 #include <stdio.h>                      // for sprintf()
 #include <stdbool.h>
@@ -55,11 +59,14 @@ bool getBTN1();
 bool getBTN2();
 void game(int num);
 
+
 int main() { // main()
 
     init(); // initialize system
 
     while (1) {
+        ballmoving();
+        /*
         switch(sysState){
             case score5:
                 if(getBTN1()){
@@ -160,7 +167,7 @@ int main() { // main()
 
                 } 
                 break;
-        }
+        }*/
 
     }// end while
     
@@ -321,6 +328,7 @@ bool getBTN2() {
     
     return FALSE;    // 0-to-1 transition not detected
 }
+
 void init(){ //initialization
        
     TRISGSET = 0xC0;     // For BTN 1 and 2: set pin 6 and 7 to 1 as input 
@@ -358,17 +366,18 @@ void init(){ //initialization
     }
     
     LATGCLR  = 0xf000; // testing LEDs finishes
-    OledClearBuffer();
+    OledClearBuffer();/*
     sysState = score5;
-    menu(1); 
+    menu(1); */
 
 }
 void game(int num){
 
-    int score = 3;
+    int score = 5;
     char SCORE[1];
-    char COUNTDOWN[17];
-    char MSG[17];
+    char COUNTDOWN[20];
+    char MSG[20];
+    char win[20];
     int time =0;
     int count = 6;
 
@@ -397,15 +406,29 @@ void game(int num){
         OledSetCursor(9,1);
         OledPutString(SCORE);
         OledUpdate();
-        if(getBTN2()) {
-            menu(1);
-            sysState = score5;
+        
+        if(INTGetFlag(INT_T4)){
+            
+            INTClearFlag(INT_T4); 
         }
     }
+    
+   while(score == num){
+       OledSetCursor(1,1);
+       OledPutString( " player 1 win");
+       OledUpdate();
+       if( getBTN2()) {
+            menu(1);
+            sysState = score5;
+            score = 0;
+       } 
+   }
 }
 
 
 void setBack() { //setup the game background
+
+    int i;
     OledClearBuffer();
     /*
      * draw a rectangle;
@@ -413,24 +436,77 @@ void setBack() { //setup the game background
     OledMoveTo(0, 0);
     OledDrawRect(127, 31);
 
+    OledMoveTo(1, 1);
+    OledDrawRect(126, 30);
     /*
      * setup middle line 
      */
-    OledMoveTo(63, 3);
-    OledDrawRect(64, 4);
-    OledMoveTo(63, 7);
-    OledDrawRect(64, 8);
-    OledMoveTo(63, 11);
-    OledDrawRect(64, 12);
-    OledMoveTo(63, 15);
-    OledDrawRect(64, 16);
-    OledMoveTo(63, 19);
-    OledDrawRect(64, 20);
-    OledMoveTo(63, 23);
-    OledDrawRect(64, 24);    
-    OledMoveTo(63, 27);
-    OledDrawRect(64, 28);        
+    for (i =3; i<32; i++) {
+        OledMoveTo(63, i);
+        OledDrawRect(63, i+1);
+        i += 3;
+    }
+    // test clear pixel
+    int j;
+    for (j = 1; j<5; j++){
+    OledMoveTo(j,0);
+    OledClearPixel();
+    }
     OledUpdate();
+}
 
 
+void ballmoving(){
+    
+    OledClearBuffer();
+    enum dir {TL,TR,BL,BR};
+    enum dir direction = TL;
+    
+    static unsigned int x=63,y= 14;
+
+    while(1){
+        OledMoveTo(x,y);
+        OledDrawPixel();
+        OledUpdate();
+        switch (direction){
+            case TL:
+                OledClearPixel();
+                x-=2;
+                y-=2;
+                if (x<=1)
+                    direction = TR;
+                if (y<=1)
+                    direction = BL;
+            break;
+            case TR:
+                OledClearPixel();
+                x+=2;
+                y-=2;
+                if (x>=127 )
+                    direction = TL;
+                if (y<=1 )
+                    direction = BR;
+            break;
+            case BL:
+                OledClearPixel();
+                x-=2;
+                y+=2;
+                if (y>=31 )
+                    direction =TL;
+                if (x<=1 )
+                    direction = BR;
+            break;
+            case BR:
+                OledClearPixel();
+                x += 2;
+                y += 2;
+                if (y >= 31 )
+                    direction = TR;
+                if (x >=127 )
+                    direction = BL;
+                break;
+                
+        }   
+    }
+     
 }

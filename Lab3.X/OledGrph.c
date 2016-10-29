@@ -1174,3 +1174,19 @@ OledClampYco(int yco)
 
 /************************************************************************/
 
+
+
+//
+// User Defined Function
+//
+//
+
+
+
+void
+OledClearPixel()
+	{
+
+	*pbOledCur = (*pfnDoRop)((0 << bnOledCur), *pbOledCur, (1<<bnOledCur));
+
+}
