@@ -59,12 +59,12 @@ enum state sysState;
 volatile int LR_value, UD_value;
 volatile unsigned int timer2_ms_value = 0;
 
-volatile int a=13,b=14,c=15,d=16; //paddle position
-volatile int o=126, p=127;
+static int a=13,b=14,c=15,d=16; //paddle position
+static int o=126, p=127;
 
-volatile unsigned int x=126,y=5; //ball position
-
-
+static unsigned int x=66,y=15; //ball position
+static unsigned int spd_x=2,spd_y=2; //ball speed
+static unsigned int xpos=65,ypos=15;
 // Definitions for the ADC averaging. How many samples (should be a power
 // of 2, and the log2 of this number to be able to shift right instead of
 // divide to get the average.
@@ -111,9 +111,9 @@ int main() { // main function
     
     
     init(); // initialize system
-
-//    while(1) // used for debugging
-//        ballmoving();
+    
+//    while(1) { // used for debugging
+//        ballmoving(); }
 
     while (1) {
         switch(sysState){
@@ -457,12 +457,15 @@ void init(){ //initialization
     
     LATGCLR  = 0xf000; // testing LEDs finishes
     OledClearBuffer();
-//    sysState = score5;
-//    menu(1); 
+    sysState = score5;
+    menu(1); 
 
 }
 
 void game(int num){
+
+    enum dir {TL,TR,BL,BR};
+    enum dir direction = TR;
 
     int score = 0;
     char SCORE[1];
@@ -492,17 +495,114 @@ void game(int num){
    OledClearBuffer();
    setBack();
 
-    while(1){
+    while(score<num){
         paddle();
-//        ballmoving();
-        if ((o==x)&&((a==y)||(b==y)||(c==y)||(d==y))) // check if the ball touches the paddle
+	    OledMoveTo(xpos,ypos);
+	    OledDrawPixel();
+	    OledUpdate();
+        if (INTGetFlag(INT_T2)){
+            INTClearFlag(INT_T2);
+            OledMoveTo(xpos,ypos);
+            OledClearPixel();
+            xpos -= spd_x;
+            ypos -= spd_y; 
+            OledMoveTo(xpos,ypos);
+            OledDrawPixel();
+        }
+        if (xpos < 4)
+            spd_x = -spd_x;
+        if (ypos < 4)
+            spd_y = -spd_y;
+        if (xpos > 126)
+            spd_x = -spd_x;
+        if (ypos > 28)
+            spd_y = -spd_y;
+
+/*	    switch (direction){
+		case TL:
+	        OledClearPixel();
+		    x-=3;
+//		    y-=1;
+		    if (x < 10){
+                x+=1;
+//                y-=1;
+		        direction = TR;}
+		    if (y < 3){
+                x-=1;
+//                y-=1;
+		        direction = BL; }
+
+		break;
+		case TR:
+	        OledClearPixel();
+		    x+=3;
+//		    y-=1;
+		    if ((x == 126)&& !(y==a||y==b||y==c||y==d)){
+                x = 66;
+                y = 15;
+		        direction = TL;
+            }
+            else{
+                x-=3;
+ //               y-=1;
+                direction = TL;}
+		    if (y < 3 ) {
+                x+=1;
+//                y+=1;
+		        direction = BR; }
+		break;
+		case BL:
+	        OledClearPixel();
+		    x-=3;
+//            y+=1;
+		    if (y > 28 ) {
+                x-=3;
+//                y-=1;
+		        direction = TL; }
+		    if (x < 3){
+                x+=3;
+//                y+=1;
+		        direction = BR;}
+		break;
+		case BR:
+	        OledClearPixel();
+		    x += 3;
+//		    y += 1;
+		    if (y > 28 ){
+                x+=3;
+ //            y-=1;
+		        direction = TR;}
+            if ((x == 126 ) && !(y==a||y==b||y==c||y==d)){
+                x = 66;
+ //               y = 15;
+                direction = TL;
+            }
+            else{
+                x-=3;
+//                y+=1;
+		        direction = BL;}
+		    break;    
+	    }*/
+
+
+
+
+        if( (xpos>125) && ((a==ypos)||(b==ypos)||(c==ypos)||(d==ypos))){ // check if the ball touches the paddle            
             score =score+1;
+        }
+        if ((xpos > 125) && !(ypos ==a)&& !(ypos==b) && !(ypos==c) && !(ypos==d)){
+            OledMoveTo(xpos,ypos);
+            OledClearPixel();
+            xpos=66;
+            ypos=15;
+            spd_x=2;
+            spd_y=2;}
         sprintf (SCORE, "%d" , score);
         OledSetCursor(9,1);
         OledPutString(SCORE);
         OledUpdate();
         /*
-        if(INTGetFlag(INT_T4)){
+     if(INTGetFlag(INT_T4)){
             INTClearFlag(INT_T4); 
         }*/
     }
@@ -546,55 +646,7 @@ void setBack() { //setup the game background
 }
 
 
-void ballmoving(){
-    
-    enum dir {TL,TR,BL,BR};
-    enum dir direction = TL;
-    
 
-    OledMoveTo(x,y);
-    OledDrawPixel();
-    OledUpdate();
-    switch (direction){
-        case TL:
-            OledClearPixel();
-            x-=2;
-            y-=2;
-            if (x<=1)
-                direction = TR;
-            if (y<=1)
-                direction = BL;
-        break;
-        case TR:
-            OledClearPixel();
-            x+=2;
-            y-=2;
-            if (x>=127 )
-                direction = TL;
-            if (y<=1 )
-                direction = BR;
-        break;
-        case BL:
-            OledClearPixel();
-            x-=2;
-            y+=2;
-            if (y>=31 )
-                direction =TL;
-            if (x<=1 )
-                direction = BR;
-        break;
-        case BR:
-            OledClearPixel();
-            x += 2;
-            y += 2;
-            if (y >= 31 )
-                direction = TR;
-            if (x >=127 )
-                direction = BL;
-            break;    
-    }
-     
-}
 
 void paddle(){
     
@@ -706,5 +758,4 @@ void __ISR(_TIMER_3_VECTOR, IPL4AUTO) _Timer3Handler(void) {
     timer2_ms_value++; // Increment the millisecond counter.
     INTClearFlag(INT_T3); // Acknowledge the interrupt source by clearing its flag.
 }
-
 
