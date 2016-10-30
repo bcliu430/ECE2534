@@ -16,6 +16,8 @@
 // Last modified:   10.21.2016
 //
 // Version:         ver.10-21-2016 create file, setup menu
+//                  ver.10.30-2016 setup adc, paddle, score counting 
+//
 
 #include <stdio.h>                      // for sprintf()
 #include <stdbool.h>
@@ -40,17 +42,62 @@
 #pragma config FSOSCEN      = OFF	    // Secondary oscillator enable
 /*
  * TODO
- * 1. Setup ADC
- * 2. pixel move
- * 3. right-side paddle
- * 4. score count
- * 5. what to do after win
- * 6. init time 5 sec
+ * 1.  pixel move
+ * 2.  reset if the ball does not hit the paddle
+ * 3.  ball speed 
+ * 4.  init time for 5 second
  * 
  */
 
 enum state {score5, score10, score20,confirm5, confirm10,confirm20,back5,back10,back20};
 enum state sysState;
+
+
+/*
+ *  Global variable 
+ */
+volatile int LR_value, UD_value;
+volatile unsigned int timer2_ms_value = 0;
+
+volatile int a=13,b=14,c=15,d=16; //paddle position
+volatile int o=126, p=127;
+
+volatile unsigned int x=126,y=5; //ball position
+
+
+// Definitions for the ADC averaging. How many samples (should be a power
+// of 2, and the log2 of this number to be able to shift right instead of
+// divide to get the average.
+#define NUM_ADC_SAMPLES 32
+#define LOG2_NUM_ADC_SAMPLES 5
+
+/*
+ *   ADC Configuration
+ */
+
+#define AD_MUX_CONFIG ADC_CH0_POS_SAMPLEA_AN2   |\
+                      ADC_CH0_NEG_SAMPLEA_NVREF |\
+                      ADC_CH0_POS_SAMPLEB_AN3   |\
+                      ADC_CH0_NEG_SAMPLEB_NVREF
+#define AD_CONFIG1 ADC_FORMAT_INTG |\
+                   ADC_CLK_TMR     |\
+                   ADC_AUTO_SAMPLING_ON
+
+#define AD_CONFIG2 ADC_VREF_AVDD_AVSS    |\
+                   ADC_SCAN_OFF          |\
+                   ADC_SAMPLES_PER_INT_2 |\
+                   ADC_ALT_BUF_ON        |\
+                   ADC_ALT_INPUT_ON
+#define AD_CONFIG3 ADC_SAMPLE_TIME_8 |\
+                   ADC_CONV_CLK_20Tcy
+
+#define AD_CONFIGPORT ENABLE_AN2_ANA|\
+                      ENABLE_AN3_ANA
+
+#define AD_CONFIGSCAN SKIP_SCAN_ALL
+
+//end ADC configuration
+
 
 // function declaraction
 void init();
@@ -60,114 +107,129 @@ bool getBTN2();
 void game(int num);
 
 
-int main() { // main()
-
+int main() { // main function
+    
+    
     init(); // initialize system
 
+//    while(1) // used for debugging
+//        ballmoving();
+
     while (1) {
-        ballmoving();
-        /*
         switch(sysState){
             case score5:
-                if(getBTN1()){
+                if(UD_value<300){
                     sysState = score10;
                     menu(2);
                 }
-                else if (getBTN2()){
+                else if(UD_value>700){
+                    sysState = score20;
+                    menu(3);
+                } 
+                else if (LR_value>700){
                     sysState = confirm5;
                     menu(4);
                 }
                 break;
             
             case score10:
-                if(getBTN1()){
+                if(UD_value<300){
                     sysState = score20;
                     menu(3);
                 }
-                else if (getBTN2()){
+                if(UD_value>700){
+                    sysState = score5;
+                    menu(1);
+                }
+                else if (LR_value>700){
                     sysState = confirm10;
                     menu(5);
                 }
                 break;
             
             case score20:
-                if(getBTN1()){
+                if(UD_value<300){
                     sysState = score5;
                     menu(1);
                 }
-                else if (getBTN2()){
+                else if(UD_value>700){
+                    sysState = score10;
+                    menu(2);
+                }
+                else if (LR_value>700){
                     sysState = confirm20;
                     menu(6);
                 }
                 break;
             
             case confirm5:
-                if(getBTN1()){
+                if(UD_value<300 || UD_value>700){
                     sysState = back5;    
                     menu(7);
    
                 }
-                else if (getBTN2()){
+                else if (LR_value>700){
                     game(5);
                 }
                 break;
             
             case confirm10:
-                if(getBTN1()){
+                if(UD_value<300 || UD_value>700){
                     sysState = back10;    
                     menu(8);
    
                 }
-                else if (getBTN2()){
+                else if (LR_value>700){
                     game(10);
                 }
                 break;
                 
             case confirm20:
-                if(getBTN1()){
+                if(UD_value<300 || UD_value>700){
                     sysState = back20;    
                     menu(9);   
                 }
-                else if (getBTN2()){
+                else if (LR_value>700){
                     game(20);
                 } 
                 break;
             case back5:
-                if(getBTN1()){
+                if(UD_value<300 || UD_value>700){
                     sysState = confirm5;    
                     menu(4);
    
                 }
-                else if (getBTN2()){
+                else if (LR_value>700){
                     sysState = score5;
                     menu(1);
                 }
                 break;
             
             case back10:
-                if(getBTN1()){
+                if(UD_value<300 || UD_value>700){
                     sysState = confirm10;    
                     menu(5);
    
                 }
-                else if (getBTN2()){
+                else if (LR_value>700){
                     sysState = score10;
-                    menu(2);
-                }
+                    menu(4);
+
+                } 
                 break;
                 
             case back20:
-                if(getBTN1()){
+                if(UD_value<300 || UD_value>700){
                     sysState = confirm20;    
                     menu(6);   
                 }
-                else if (getBTN2()){
+                else if (LR_value>700){
                     sysState = score20;
                     menu(3);
 
                 } 
                 break;
-        }*/
+        }
 
     }// end while
     
@@ -179,10 +241,11 @@ void TimerInit() {
     OpenTimer2(T2_ON | T2_IDLE_CON | T2_SOURCE_INT | T2_PS_1_16 | T2_GATE_OFF, 624);
     INTClearFlag(INT_T2);
     // The period of Timer 3 is (256 * 39032)/(10 MHz) = 1 s (freq = 1 Hz)
-    OpenTimer3(T3_ON | T3_IDLE_CON | T3_SOURCE_INT | T3_PS_1_256 | T3_GATE_OFF, 39061);
-    INTClearFlag(INT_T3); 
-    // The period of Timer 4 is (16 * 625)/(10 MHz) = 1 ms (freq = 10 Hz)
-    OpenTimer4(T4_ON | T4_IDLE_CON | T4_SOURCE_INT | T4_PS_1_16 | T4_GATE_OFF, 624);
+    OpenTimer3(T3_ON | T3_IDLE_CON | T3_SOURCE_INT | T3_PS_1_16 | T3_GATE_OFF, 624);
+    INTSetVectorPriority(INT_TIMER_3_VECTOR, INT_PRIORITY_LEVEL_4);
+    INTClearFlag(INT_T3);
+    INTEnable(INT_T3, INT_ENABLED);    // The period of Timer 4 is (16 * 625)/(10 MHz) = 1 ms (freq = 10 Hz)
+    OpenTimer4(T4_ON | T4_IDLE_CON | T4_SOURCE_INT | T4_PS_1_16 | T4_GATE_OFF, 62499);
     INTClearFlag(INT_T4);
     return;
 }
@@ -270,7 +333,6 @@ void menu(int num){
 
 }
 
-
 bool getBTN1() {
     enum Button1Position {UP, DOWN}; // Possible states of BTN1
     static enum Button1Position button1CurrentPosition = UP;  // BTN1 current state
@@ -338,8 +400,36 @@ void init(){ //initialization
     // initialize functions
     DelayInit();
     OledInit();
-    TimerInit();
+    //TimerInit();
+    TRISBCLR = 0x0040;   
+    ODCBCLR  = 0x0040;   
+    LATBSET  = 0x0040;
+    
+    
+    // The period of Timer 2 is (16 * 625)/(10 MHz) = 1 ms (freq = 10 Hz)
+    OpenTimer2(T2_ON | T2_IDLE_CON | T2_SOURCE_INT | T2_PS_1_16 | T2_GATE_OFF, 624);
+    INTClearFlag(INT_T2);
+    // The period of Timer 3 is (256 * 39032)/(10 MHz) = 1 s (freq = 1 Hz)
+    OpenTimer3(T3_ON | T3_IDLE_CON | T3_SOURCE_INT | T3_PS_1_16 | T3_GATE_OFF, 624);
+    INTSetVectorPriority(INT_TIMER_3_VECTOR, INT_PRIORITY_LEVEL_4);
+    INTClearFlag(INT_T3);
+    INTEnable(INT_T3, INT_ENABLED);    // The period of Timer 4 is (16 * 625)/(10 MHz) = 1 ms (freq = 10 Hz)
+    OpenTimer4(T4_ON | T4_IDLE_CON | T4_SOURCE_INT | T4_PS_1_256 | T4_GATE_OFF, 39061);
+    INTClearFlag(INT_T4);
+    
+    // ADC initialization
+    SetChanADC10(AD_MUX_CONFIG);
+    OpenADC10(AD_CONFIG1, AD_CONFIG2, AD_CONFIG3, AD_CONFIGPORT, AD_CONFIGSCAN);
+    EnableADC10();
+    
+    INTSetVectorPriority(INT_ADC_VECTOR, INT_PRIORITY_LEVEL_7);
+    INTClearFlag(INT_AD1);
+    INTEnable(INT_AD1, INT_ENABLED);
+    INTConfigureSystem(INT_SYSTEM_CONFIG_MULT_VECTOR);
+    INTEnableInterrupts();
 
+    //end ADC initialization
+    
     unsigned int timeCount=0;
     
     
@@ -366,14 +456,15 @@ void init(){ //initialization
     }
     
     LATGCLR  = 0xf000; // testing LEDs finishes
-    OledClearBuffer();/*
-    sysState = score5;
-    menu(1); */
+    OledClearBuffer();
+//    sysState = score5;
+//    menu(1); 
 
 }
+
 void game(int num){
 
-    int score = 5;
+    int score = 0;
     char SCORE[1];
     char COUNTDOWN[20];
     char MSG[20];
@@ -391,26 +482,29 @@ void game(int num){
         sprintf(COUNTDOWN,"  start in %d",count);
         OledSetCursor(1,2);
         OledPutString(COUNTDOWN);
-        if (INTGetFlag(INT_T3)) {
+        if (INTGetFlag(INT_T4)) {
             time++;
             count--;
-            INTClearFlag(INT_T3); 
+            INTClearFlag(INT_T4); 
         } 
     }
     
    OledClearBuffer();
    setBack();
 
-    while(score < num){
+    while(1){
+        paddle();
+//        ballmoving();
+        if ((o==x)&&((a==y)||(b==y)||(c==y)||(d==y))) // check if the ball touches the paddle
+            score =score+1;
         sprintf (SCORE, "%d" , score);
         OledSetCursor(9,1);
         OledPutString(SCORE);
         OledUpdate();
-        
+        /*
         if(INTGetFlag(INT_T4)){
-            
             INTClearFlag(INT_T4); 
-        }
+        }*/
     }
     
    while(score == num){
@@ -434,10 +528,11 @@ void setBack() { //setup the game background
      * draw a rectangle;
      */
     OledMoveTo(0, 0);
-    OledDrawRect(127, 31);
-
-    OledMoveTo(1, 1);
-    OledDrawRect(126, 30);
+    OledDrawRect(127, 1); //top
+    OledMoveTo(0, 30);
+    OledDrawRect(127, 31); //bottom
+    OledMoveTo(0, 2);
+    OledDrawRect(1, 29); // left
     /*
      * setup middle line 
      */
@@ -446,67 +541,170 @@ void setBack() { //setup the game background
         OledDrawRect(63, i+1);
         i += 3;
     }
-    // test clear pixel
-    int j;
-    for (j = 1; j<5; j++){
-    OledMoveTo(j,0);
-    OledClearPixel();
-    }
+
     OledUpdate();
 }
 
 
 void ballmoving(){
     
-    OledClearBuffer();
     enum dir {TL,TR,BL,BR};
     enum dir direction = TL;
     
-    static unsigned int x=63,y= 14;
 
-    while(1){
-        OledMoveTo(x,y);
-        OledDrawPixel();
-        OledUpdate();
-        switch (direction){
-            case TL:
-                OledClearPixel();
-                x-=2;
-                y-=2;
-                if (x<=1)
-                    direction = TR;
-                if (y<=1)
-                    direction = BL;
-            break;
-            case TR:
-                OledClearPixel();
-                x+=2;
-                y-=2;
-                if (x>=127 )
-                    direction = TL;
-                if (y<=1 )
-                    direction = BR;
-            break;
-            case BL:
-                OledClearPixel();
-                x-=2;
-                y+=2;
-                if (y>=31 )
-                    direction =TL;
-                if (x<=1 )
-                    direction = BR;
-            break;
-            case BR:
-                OledClearPixel();
-                x += 2;
-                y += 2;
-                if (y >= 31 )
-                    direction = TR;
-                if (x >=127 )
-                    direction = BL;
-                break;
-                
-        }   
+    OledMoveTo(x,y);
+    OledDrawPixel();
+    OledUpdate();
+    switch (direction){
+        case TL:
+            OledClearPixel();
+            x-=2;
+            y-=2;
+            if (x<=1)
+                direction = TR;
+            if (y<=1)
+                direction = BL;
+        break;
+        case TR:
+            OledClearPixel();
+            x+=2;
+            y-=2;
+            if (x>=127 )
+                direction = TL;
+            if (y<=1 )
+                direction = BR;
+        break;
+        case BL:
+            OledClearPixel();
+            x-=2;
+            y+=2;
+            if (y>=31 )
+                direction =TL;
+            if (x<=1 )
+                direction = BR;
+        break;
+        case BR:
+            OledClearPixel();
+            x += 2;
+            y += 2;
+            if (y >= 31 )
+                direction = TR;
+            if (x >=127 )
+                direction = BL;
+            break;    
     }
      
 }
+
+void paddle(){
+    
+    OledMoveTo(o,a);
+    OledDrawPixel();
+    OledMoveTo(o,b);
+    OledDrawPixel(); 
+    OledMoveTo(o,c);
+    OledDrawPixel();
+    OledMoveTo(o,d);
+    OledDrawPixel(); 
+    OledMoveTo(p,a);
+    OledDrawPixel();
+    OledMoveTo(p,b);
+    OledDrawPixel();
+    OledMoveTo(p,c);
+    OledDrawPixel();
+    OledMoveTo(p,d);
+    OledDrawPixel();
+    OledUpdate();
+    
+    if (a>=1 && UD_value >700){ //moving up
+        OledMoveTo(o,a);
+        OledClearPixel();
+        OledMoveTo(o,b);
+        OledClearPixel();        
+        OledMoveTo(o,c);
+        OledClearPixel();        
+        OledMoveTo(o,d);
+        OledClearPixel();
+        OledMoveTo(p,a);
+        OledClearPixel();
+        OledMoveTo(p,b);
+        OledClearPixel();        
+        OledMoveTo(p,c);
+        OledClearPixel();        
+        OledMoveTo(p,d);
+        OledClearPixel();
+        
+        a-=2;
+        b-=2;
+        c-=2;
+        d-=2;
+    }
+    if (d<=31 && UD_value <300){
+        OledMoveTo(o,a);
+        OledClearPixel();
+        OledMoveTo(o,b);
+        OledClearPixel();        
+        OledMoveTo(o,c);
+        OledClearPixel();        
+        OledMoveTo(o,d);
+        OledClearPixel();
+        OledMoveTo(p,a);
+        OledClearPixel();
+        OledMoveTo(p,b);
+        OledClearPixel();        
+        OledMoveTo(p,c);
+        OledClearPixel();        
+        OledMoveTo(p,d);
+        OledClearPixel();
+        
+        
+        a+=2;
+        b+=2;
+        c+=2;
+        d+=2;
+        
+    }
+    OledUpdate();
+}
+
+
+/*
+ *   ADC setup 
+ */
+
+void __ISR(_ADC_VECTOR, IPL7SRS) _ADCHandler(void) {
+    static unsigned int current_reading = 0;
+    static unsigned int ADC_LR_Readings[NUM_ADC_SAMPLES], ADC_UD_Readings[NUM_ADC_SAMPLES];
+    unsigned int i;
+    unsigned int LRtotal, UDtotal;
+
+    if (ReadActiveBufferADC10()) {
+        ADC_LR_Readings[current_reading] = ReadADC10(0);
+        ADC_UD_Readings[current_reading] = ReadADC10(1);
+    }
+    else {
+        ADC_LR_Readings[current_reading] = ReadADC10(8);
+        ADC_UD_Readings[current_reading] = ReadADC10(9);
+    }
+
+    current_reading++;
+    if (current_reading == NUM_ADC_SAMPLES) {
+        current_reading = 0;
+        LRtotal = 0;
+        UDtotal = 0;
+        for (i = 0; i < NUM_ADC_SAMPLES; i++) {
+            LRtotal += ADC_LR_Readings[i];
+            UDtotal += ADC_UD_Readings[i];
+        }
+        LR_value = LRtotal >> LOG2_NUM_ADC_SAMPLES; // divide by num of samples
+        UD_value = UDtotal >> LOG2_NUM_ADC_SAMPLES; // divide by num of samples
+    }
+    INTClearFlag(INT_AD1);
+}
+
+void __ISR(_TIMER_3_VECTOR, IPL4AUTO) _Timer3Handler(void) {
+    timer2_ms_value++; // Increment the millisecond counter.
+    INTClearFlag(INT_T3); // Acknowledge the interrupt source by clearing its flag.
+}
+
+
