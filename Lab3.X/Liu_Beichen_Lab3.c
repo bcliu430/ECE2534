@@ -16,8 +16,8 @@
 // Last modified:   10.21.2016
 //
 // Version:         ver.10-21-2016 create file, setup menu
-//                  ver.10.30-2016 setup adc, paddle, score counting 
-//
+//                  ver.10-30-2016 setup adc, paddle, score counting 
+//                  ver.10-31-2016 set delay for adc 
 
 #include <stdio.h>                      // for sprintf()
 #include <stdbool.h>
@@ -42,10 +42,11 @@
 #pragma config FSOSCEN      = OFF	    // Secondary oscillator enable
 /*
  * TODO
- * 1.  pixel move
- * 2.  reset if the ball does not hit the paddle
- * 3.  ball speed 
- * 4.  init time for 5 second
+ * 1.  bounce back ball if touches paddle;
+ * 2.  ball speed  
+ *         - initial random speed
+ *         - speed change id paddle change
+ * 3.  init time for 5 second
  * 
  */
 
@@ -71,6 +72,7 @@ static unsigned int xpos=65,ypos=15;
 #define NUM_ADC_SAMPLES 32
 #define LOG2_NUM_ADC_SAMPLES 5
 
+#define DELAY 300
 /*
  *   ADC Configuration
  */
@@ -102,7 +104,6 @@ static unsigned int xpos=65,ypos=15;
 // function declaraction
 void init();
 void Menu(int num);
-bool getBTN1();
 bool getBTN2();
 void game(int num);
 
@@ -118,17 +119,20 @@ int main() { // main function
     while (1) {
         switch(sysState){
             case score5:
-                if(UD_value<300){
+                if(UD_value<300){    
                     sysState = score10;
                     menu(2);
+                    delay(DELAY);
                 }
                 else if(UD_value>700){
                     sysState = score20;
                     menu(3);
+                    delay(DELAY);
                 } 
                 else if (LR_value>700){
                     sysState = confirm5;
                     menu(4);
+                    delay(DELAY);
                 }
                 break;
             
@@ -136,14 +140,17 @@ int main() { // main function
                 if(UD_value<300){
                     sysState = score20;
                     menu(3);
+                    delay(DELAY);
                 }
-                if(UD_value>700){
+                else if(UD_value>700){
                     sysState = score5;
                     menu(1);
+                    delay(DELAY);
                 }
                 else if (LR_value>700){
                     sysState = confirm10;
                     menu(5);
+                    delay(DELAY);
                 }
                 break;
             
@@ -151,14 +158,17 @@ int main() { // main function
                 if(UD_value<300){
                     sysState = score5;
                     menu(1);
+                    delay(DELAY);
                 }
                 else if(UD_value>700){
                     sysState = score10;
                     menu(2);
+                    delay(DELAY);
                 }
                 else if (LR_value>700){
                     sysState = confirm20;
                     menu(6);
+                    delay(DELAY);
                 }
                 break;
             
@@ -166,7 +176,7 @@ int main() { // main function
                 if(UD_value<300 || UD_value>700){
                     sysState = back5;    
                     menu(7);
-   
+                    delay(DELAY);
                 }
                 else if (LR_value>700){
                     game(5);
@@ -177,6 +187,7 @@ int main() { // main function
                 if(UD_value<300 || UD_value>700){
                     sysState = back10;    
                     menu(8);
+                    delay(DELAY);
    
                 }
                 else if (LR_value>700){
@@ -188,6 +199,7 @@ int main() { // main function
                 if(UD_value<300 || UD_value>700){
                     sysState = back20;    
                     menu(9);   
+                    delay(DELAY);
                 }
                 else if (LR_value>700){
                     game(20);
@@ -197,11 +209,13 @@ int main() { // main function
                 if(UD_value<300 || UD_value>700){
                     sysState = confirm5;    
                     menu(4);
+                    delay(DELAY);
    
                 }
                 else if (LR_value>700){
                     sysState = score5;
                     menu(1);
+                    delay(DELAY);
                 }
                 break;
             
@@ -209,11 +223,13 @@ int main() { // main function
                 if(UD_value<300 || UD_value>700){
                     sysState = confirm10;    
                     menu(5);
+                    delay(DELAY);
    
                 }
                 else if (LR_value>700){
                     sysState = score10;
                     menu(4);
+                    delay(DELAY);
 
                 } 
                 break;
@@ -222,10 +238,12 @@ int main() { // main function
                 if(UD_value<300 || UD_value>700){
                     sysState = confirm20;    
                     menu(6);   
+                    delay(DELAY);
                 }
                 else if (LR_value>700){
                     sysState = score20;
                     menu(3);
+                    delay(DELAY);
 
                 } 
                 break;
@@ -234,20 +252,6 @@ int main() { // main function
     }// end while
     
     return (EXIT_SUCCESS);
-}
-// Initialize Timer2 so that it rolls over 10 times per second
-void TimerInit() {
-    // The period of Timer 2 is (16 * 625)/(10 MHz) = 1 ms (freq = 10 Hz)
-    OpenTimer2(T2_ON | T2_IDLE_CON | T2_SOURCE_INT | T2_PS_1_16 | T2_GATE_OFF, 624);
-    INTClearFlag(INT_T2);
-    // The period of Timer 3 is (256 * 39032)/(10 MHz) = 1 s (freq = 1 Hz)
-    OpenTimer3(T3_ON | T3_IDLE_CON | T3_SOURCE_INT | T3_PS_1_16 | T3_GATE_OFF, 624);
-    INTSetVectorPriority(INT_TIMER_3_VECTOR, INT_PRIORITY_LEVEL_4);
-    INTClearFlag(INT_T3);
-    INTEnable(INT_T3, INT_ENABLED);    // The period of Timer 4 is (16 * 625)/(10 MHz) = 1 ms (freq = 10 Hz)
-    OpenTimer4(T4_ON | T4_IDLE_CON | T4_SOURCE_INT | T4_PS_1_16 | T4_GATE_OFF, 62499);
-    INTClearFlag(INT_T4);
-    return;
 }
 
 void menu(int num){
@@ -331,35 +335,6 @@ void menu(int num){
         OledUpdate();
     }
 
-}
-
-bool getBTN1() {
-    enum Button1Position {UP, DOWN}; // Possible states of BTN1
-    static enum Button1Position button1CurrentPosition = UP;  // BTN1 current state
-    static enum Button1Position button1PreviousPosition = UP; // BTN1 previous state
-    static unsigned int button1History = 0x0;            // Last 32 samples of BTN1
-    // Reminder - "static" variables retain their values from one call to the next.
-    button1PreviousPosition = button1CurrentPosition;
-
-    while (!INTGetFlag(INT_T2)) { } // Has roll-over occurred? (Has 1 ms passed?)
-  
-    INTClearFlag(INT_T2);
-
-     
-    button1History = button1History << 1;           // Sample BTN1
-    if(PORTG & 0x40)                
-        button1History = button1History | 0x01;
-     
-    if ((button1History == 0xFFFFFFFF) && (button1CurrentPosition == UP))
-        button1CurrentPosition = DOWN;
-    
-    else if ((button1History == 0x0000) && (button1CurrentPosition == DOWN))
-         button1CurrentPosition = UP;  
-    
-    if((button1CurrentPosition == DOWN) && (button1PreviousPosition == UP))
-        return TRUE; // debounced 0-to-1 transition has been detected
-
-    return FALSE;    // 0-to-1 transition not detected
 }
 
 bool getBTN2() {
@@ -513,77 +488,10 @@ void game(int num){
             spd_x = -spd_x;
         if (ypos < 4)
             spd_y = -spd_y;
-        if (xpos > 126)
+        if (xpos > 125)
             spd_x = -spd_x;
         if (ypos > 28)
             spd_y = -spd_y;
-
-/*	    switch (direction){
-		case TL:
-	        OledClearPixel();
-		    x-=3;
-//		    y-=1;
-		    if (x < 10){
-                x+=1;
-//                y-=1;
-		        direction = TR;}
-		    if (y < 3){
-                x-=1;
-//                y-=1;
-		        direction = BL; }
-
-		break;
-		case TR:
-	        OledClearPixel();
-		    x+=3;
-//		    y-=1;
-		    if ((x == 126)&& !(y==a||y==b||y==c||y==d)){
-                x = 66;
-                y = 15;
-		        direction = TL;
-            }
-            else{
-                x-=3;
- //               y-=1;
-                direction = TL;}
-		    if (y < 3 ) {
-                x+=1;
-//                y+=1;
-		        direction = BR; }
-		break;
-		case BL:
-	        OledClearPixel();
-		    x-=3;
-//            y+=1;
-		    if (y > 28 ) {
-                x-=3;
-//                y-=1;
-		        direction = TL; }
-		    if (x < 3){
-                x+=3;
-//                y+=1;
-		        direction = BR;}
-		break;
-		case BR:
-	        OledClearPixel();
-		    x += 3;
-//		    y += 1;
-		    if (y > 28 ){
-                x+=3;
- //            y-=1;
-		        direction = TR;}
-            if ((x == 126 ) && !(y==a||y==b||y==c||y==d)){
-                x = 66;
- //               y = 15;
-                direction = TL;
-            }
-            else{
-                x-=3;
-//                y+=1;
-		        direction = BL;}
-		    break;    
-	    }*/
-
 
 
 
@@ -601,10 +509,6 @@ void game(int num){
         OledSetCursor(9,1);
         OledPutString(SCORE);
         OledUpdate();
-        /*
-     if(INTGetFlag(INT_T4)){
-            INTClearFlag(INT_T4); 
-        }*/
     }
     
    while(score == num){
@@ -628,9 +532,9 @@ void setBack() { //setup the game background
      * draw a rectangle;
      */
     OledMoveTo(0, 0);
-    OledDrawRect(127, 1); //top
+    OledDrawRect(125, 1); //top
     OledMoveTo(0, 30);
-    OledDrawRect(127, 31); //bottom
+    OledDrawRect(125, 31); //bottom
     OledMoveTo(0, 2);
     OledDrawRect(1, 29); // left
     /*
@@ -759,3 +663,14 @@ void __ISR(_TIMER_3_VECTOR, IPL4AUTO) _Timer3Handler(void) {
     INTClearFlag(INT_T3); // Acknowledge the interrupt source by clearing its flag.
 }
 
+
+void delay(int num) {
+    unsigned int time = 0;
+    while(time < num) {
+        if(INTGetFlag(INT_T2)){
+            time++;
+            INTClearFlag(INT_T2);
+        }
+
+    }
+}
