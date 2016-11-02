@@ -20,7 +20,7 @@
 //                  ver.10-31-2016 set delay for adc, various bug fixes
 //                  ver.11-01-2016 various bug fixes, set random initial speed, 
 //                                 user can test paddle before game starts
-//
+//                  ver.11-02-2016 paddle can change ball speed 
 //
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //                                                                                                //
@@ -29,8 +29,11 @@
 //         This game mostly use joystick to control. up and down decide menu list or paddle       //
 //         moving direction and right is confirm. After you win each game, hold button2 to        //
 //         return to main menu.                                                                   //
-//         I set 3 game modes. you can either get 5 point or 10 point to win the game, or you     //
-//         can try to get the highest score using unlimited mode(extra credit). Enjoy your game.  //
+//         I set 3 game modes. you can either get 5 point or 10 point to win the game.            //
+//                                                                                                //
+//         extra credit:                                                                          //
+//         Or you can try to play a two-player game: player 1 use btn2 to move paddle up          //
+//         and btn1 to move paddle down, player who wins 5 points win the game. Have Fun.         //
 //                                                                                                //
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //
@@ -58,12 +61,10 @@
 #pragma config FSOSCEN      = OFF	    // Secondary oscillator enable
 /*
  * TODO
- * 1.  ball speed  
- *         - speed change if paddle change
- * 2.  add extra credit
- * 3.  init time for 5 second
- * 4.  change game initial time to 6  
- *
+ * 1.  add extra credit
+ * 2.  init time for 5 second
+ * 3.  change game initial time to 6  
+ * 4.  extra credit: 2 player game one use paddle one use button
  */
 
 enum state {score5, score10, score20,confirm5, confirm10,confirm20,back5,back10,back20};
@@ -507,8 +508,8 @@ void game(int num){
             spd_x = -spd_x;
         if (ypos < 4)
             spd_y = -spd_y;
-        if (xpos > 125)
-            spd_x = -spd_x;
+//        if (xpos > 125)
+//            spd_x = -spd_x;
         if (ypos > 28)
             spd_y = -spd_y;
 
@@ -516,13 +517,16 @@ void game(int num){
 
         if( (xpos>125) && (ypos>=a) && (ypos <=d) ){ // check if the ball touches the paddle            
             score =score+1;
-            /*  change spd here
-            if(UD_value>300){
+            //  change spd here
+            if(UD_value<300){ // move down
+                spd_x = -spd_x;
+                spd_y -=2;
 
             }
-            if(UD_value<700){
-
-            } */
+            if(UD_value>700){ // move up 
+                spd_x = -spd_x;
+                spd_y +=2;
+            } 
         }
         if ((xpos > 125) && ((ypos<a) || (ypos>d))){
             OledMoveTo(xpos,ypos);
