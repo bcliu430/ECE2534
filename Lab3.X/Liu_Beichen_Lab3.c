@@ -1,4 +1,4 @@
-////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////
 // ECE 2534:        Lab 3  Pong Game
 //
 // File name:       Liu_Beichen_Lab3.c
@@ -17,8 +17,24 @@
 //
 // Version:         ver.10-21-2016 create file, setup menu
 //                  ver.10-30-2016 setup adc, paddle, score counting 
-//                  ver.10-31-2016 set delay for adc 
-
+//                  ver.10-31-2016 set delay for adc, various bug fixes
+//                  ver.11-01-2016 various bug fixes, set random initial speed, 
+//                                 user can test paddle before game starts
+//
+//
+////////////////////////////////////////////////////////////////////////////////////////////////////
+//                                                                                                //
+//                                             README                                             //
+//                                                                                                //
+//         This game mostly use joystick to control. up and down decide menu list or paddle       //
+//         moving direction and right is confirm. After you win each game, hold button2 to        //
+//         return to main menu.                                                                   //
+//         I set 3 game modes. you can either get 5 point or 10 point to win the game, or you     //
+//         can try to get the highest score using unlimited mode(extra credit). Enjoy your game.  //
+//                                                                                                //
+////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//
 #include <stdio.h>                      // for sprintf()
 #include <stdbool.h>
 #include <stdlib.h>
@@ -42,12 +58,12 @@
 #pragma config FSOSCEN      = OFF	    // Secondary oscillator enable
 /*
  * TODO
- * 1.  bounce back ball if touches paddle;
- * 2.  ball speed  
- *         - initial random speed
- *         - speed change id paddle change
+ * 1.  ball speed  
+ *         - speed change if paddle change
+ * 2.  add extra credit
  * 3.  init time for 5 second
- * 
+ * 4.  change game initial time to 6  
+ *
  */
 
 enum state {score5, score10, score20,confirm5, confirm10,confirm20,back5,back10,back20};
@@ -66,6 +82,7 @@ static int o=126, p=127;
 static unsigned int x=66,y=15; //ball position
 static unsigned int spd_x=2,spd_y=2; //ball speed
 static unsigned int xpos=65,ypos=15;
+static unsigned int Time;
 // Definitions for the ADC averaging. How many samples (should be a power
 // of 2, and the log2 of this number to be able to shift right instead of
 // divide to get the average.
@@ -110,13 +127,14 @@ void game(int num);
 
 int main() { // main function
     
-    
     init(); // initialize system
-    
-//    while(1) { // used for debugging
-//        ballmoving(); }
 
     while (1) {
+        if (INTGetFlag(INT_T2)){
+            Time++; // background timer to get random speed;
+            INTClearFlag(INT_T2);
+
+        }
         switch(sysState){
             case score5:
                 if(UD_value<300){    
@@ -439,9 +457,6 @@ void init(){ //initialization
 
 void game(int num){
 
-    enum dir {TL,TR,BL,BR};
-    enum dir direction = TR;
-
     int score = 0;
     char SCORE[1];
     char COUNTDOWN[20];
@@ -456,7 +471,8 @@ void game(int num){
     OledSetCursor(1,1);
     OledPutString(MSG);
 
-    while(time <7){
+    while(time <3){
+        paddle();
         sprintf(COUNTDOWN,"  start in %d",count);
         OledSetCursor(1,2);
         OledPutString(COUNTDOWN);
@@ -467,8 +483,11 @@ void game(int num){
         } 
     }
     
-   OledClearBuffer();
-   setBack();
+    OledClearBuffer();
+    setBack();
+    
+    spd_x = timer2_ms_value%3+1;
+    spd_y = timer2_ms_value%2+1;
 
     while(score<num){
         paddle();
@@ -480,7 +499,7 @@ void game(int num){
             OledMoveTo(xpos,ypos);
             OledClearPixel();
             xpos -= spd_x;
-            ypos -= spd_y; 
+            ypos += spd_y; 
             OledMoveTo(xpos,ypos);
             OledDrawPixel();
         }
@@ -495,16 +514,24 @@ void game(int num){
 
 
 
-        if( (xpos>125) && ((a==ypos)||(b==ypos)||(c==ypos)||(d==ypos))){ // check if the ball touches the paddle            
+        if( (xpos>125) && (ypos>=a) && (ypos <=d) ){ // check if the ball touches the paddle            
             score =score+1;
+            /*  change spd here
+            if(UD_value>300){
+
+            }
+            if(UD_value<700){
+
+            } */
         }
-        if ((xpos > 125) && !(ypos ==a)&& !(ypos==b) && !(ypos==c) && !(ypos==d)){
+        if ((xpos > 125) && ((ypos<a) || (ypos>d))){
             OledMoveTo(xpos,ypos);
             OledClearPixel();
             xpos=66;
             ypos=15;
-            spd_x=2;
-            spd_y=2;}
+            spd_x=timer2_ms_value%3+1;
+            spd_y=timer2_ms_value%2+1;
+        }
         sprintf (SCORE, "%d" , score);
         OledSetCursor(9,1);
         OledPutString(SCORE);
