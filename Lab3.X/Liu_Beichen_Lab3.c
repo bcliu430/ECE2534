@@ -31,10 +31,6 @@
 //         return to main menu.                                                                   //
 //         I set 3 game modes. you can either get 5 point or 10 point to win the game.            //
 //                                                                                                //
-//         extra credit:                                                                          //
-//         Or you can try to play a two-player game: player 1 use btn2 to move paddle up          //
-//         and btn1 to move paddle down, player who wins 5 points win the game. Have Fun.         //
-//                                                                                                //
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 //
