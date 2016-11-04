@@ -1,4 +1,4 @@
-//////////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////////
 // ECE 2534:        Lab 3  Pong Game
 //
 // File name:       Liu_Beichen_Lab3.c
@@ -65,7 +65,9 @@
  * 
  */
 
-enum state {score5, score10, score20,confirm5, confirm10,confirm20,back5,back10,back20};
+enum state {score5,   score10,   score20,   \
+            confirm5, confirm10, confirm20, \
+            back5,    back10,    back20};
 enum state sysState;
 
 
@@ -467,7 +469,7 @@ void game(int num){
     int time =0;
     int count = 6;
 
-
+    OledClearBuffer();
     setBack();
     sprintf(MSG,"Win Score is %d",num);
     OledSetCursor(1,1);
@@ -493,6 +495,7 @@ void game(int num){
     spd_y = timer2_ms_value%2+1;
 
     while(score<num){
+        setBack();
         paddle();
 	    OledMoveTo(xpos,ypos);
 	    OledDrawPixel();
@@ -501,7 +504,7 @@ void game(int num){
             INTClearFlag(INT_T2);
             OledMoveTo(xpos,ypos);
             OledClearPixel();
-            xpos -= spd_x;
+            xpos += spd_x;
             ypos += spd_y; 
             OledMoveTo(xpos,ypos);
             OledDrawPixel();
@@ -515,7 +518,8 @@ void game(int num){
 
 
 
-        if( (xpos>125) && (ypos>=a) && (ypos <=d) ){ // check if the ball touches the paddle            
+        if( (xpos>125) && (ypos>=a) && (ypos <=d) ){ // check if the ball touches the paddle
+            xpos = 125;
             score =score+1;
             //  change spd here
             if(UD_value<300){ // move down
@@ -526,7 +530,9 @@ void game(int num){
             if(UD_value>700){ // move up 
                 spd_x = -spd_x;
                 spd_y +=2;
-            } 
+            }
+            else
+                spd_x = -spd_x;
         }
         if ((xpos > 125) && ((ypos<a) || (ypos>d))){
             OledMoveTo(xpos,ypos);
@@ -558,7 +564,7 @@ void game(int num){
 void setBack() { //setup the game background
 
     int i;
-    OledClearBuffer();
+  //  OledClearBuffer();
     /*
      * draw a rectangle;
      */
