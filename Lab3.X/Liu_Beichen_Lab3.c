@@ -21,15 +21,20 @@
 //                  ver.11-01-2016 various bug fixes, set random initial speed, 
 //                                 user can test paddle before game starts
 //                  ver.11-02-2016 paddle can change ball speed 
-//
+//                  ver.11-04-2016 various fixes, wrap up project with details
+// 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //                                                                                                //
 //                                             README                                             //
 //                                                                                                //
-//         This game mostly use joystick to control. up and down decide menu list or paddle       //
-//         moving direction and right is confirm. After you win each game, hold button2 to        //
-//         return to main menu.                                                                   //
-//         I set 3 game modes. you can either get 5 point or 10 point to win the game.            //
+//         This game mostly use joystick to control, up and down decide menu list or paddle       //
+//         moving direction and right is confirm. After you win each game, press and hold         //
+//         button2 to return to main menu.                                                        //
+//         I set 3 game modes. you can get 5 points, 10 points or 20 points to win the game.      //
+//                                                                                                //
+//         Note: I modified OledGrph.c, please use my updated c files to validate.                // 
+//                                                                                                // 
+//         Enjoy your game.                                                                       //
 //                                                                                                //
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //
@@ -57,10 +62,7 @@
 #pragma config FSOSCEN      = OFF	    // Secondary oscillator enable
 /*
  * TODO
- * 1.  add extra credit
- * 2.  init time for 5 second
- * 3.  change game initial time to 6  
- * 4.  extra credit: 2 player game one use paddle one use button
+ * 
  */
 
 enum state {score5, score10, score20,confirm5, confirm10,confirm20,back5,back10,back20};
@@ -132,6 +134,9 @@ int main() { // main function
             INTClearFlag(INT_T2);
 
         }
+        /*
+         * state machine 
+         */
         switch(sysState){
             case score5:
                 if(UD_value<300){    
@@ -269,7 +274,7 @@ int main() { // main function
     return (EXIT_SUCCESS);
 }
 
-void menu(int num){
+void menu(int num){ // menu list
     if ((num == 1)||(num == 2)||(num ==3)) {
         OledClearBuffer();
         OledSetCursor(0, 0);          // column 0, row 0 of display
@@ -390,7 +395,7 @@ void init(){ //initialization
     // initialize functions
     DelayInit();
     OledInit();
-    //TimerInit();
+    
     TRISBCLR = 0x0040;   
     ODCBCLR  = 0x0040;   
     LATBSET  = 0x0040;
@@ -436,7 +441,7 @@ void init(){ //initialization
     OledPutString("   BEICHEN LIU   ");
     OledUpdate(); 
     
-    while (timeCount <= 1000) { //delay for 5 second
+    while (timeCount <= 5000) { //delay for 5 second
         if (INTGetFlag(INT_T2)) // Has roll-over occurred? (Has 1 ms passed?)
         {
             timeCount++;
@@ -468,7 +473,7 @@ void game(int num){
     OledSetCursor(1,1);
     OledPutString(MSG);
 
-    while(time <3){
+    while(time < 6){
         paddle();
         sprintf(COUNTDOWN,"  start in %d",count);
         OledSetCursor(1,2);
@@ -482,7 +487,8 @@ void game(int num){
     
     OledClearBuffer();
     setBack();
-    
+   
+    // random start speed;
     spd_x = timer2_ms_value%3+1;
     spd_y = timer2_ms_value%2+1;
 
@@ -504,8 +510,6 @@ void game(int num){
             spd_x = -spd_x;
         if (ypos < 4)
             spd_y = -spd_y;
-//        if (xpos > 125)
-//            spd_x = -spd_x;
         if (ypos > 28)
             spd_y = -spd_y;
 
@@ -579,7 +583,7 @@ void setBack() { //setup the game background
 
 
 
-void paddle(){
+void paddle(){  // set paddle moving 
     
     OledMoveTo(o,a);
     OledDrawPixel();
@@ -689,7 +693,9 @@ void __ISR(_TIMER_3_VECTOR, IPL4AUTO) _Timer3Handler(void) {
     timer2_ms_value++; // Increment the millisecond counter.
     INTClearFlag(INT_T3); // Acknowledge the interrupt source by clearing its flag.
 }
-
+/*
+ *  delay function
+ */ 
 
 void delay(int num) {
     unsigned int time = 0;
