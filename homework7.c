@@ -155,8 +155,8 @@ int getAccelReg(SpiChannel chn, unsigned int addr){
 Accel * getAccelData(SpiChannel chn){
     static Accel result;
     result.ID = getAccelReg(chn, 0x0);
-    result.X = getAccelReg(chn, 0x32);
-    result.Y = getAccelReg(chn, 0x34);
-    result.Z = getAccelReg(chn, 0x36) ;
+    result.X = getAccelReg(chn, 0x33)<<8 |getAccelReg(chn, 0x32);
+    result.Y = getAccelReg(chn, 0x35)<<8 |getAccelReg(chn, 0x34);
+    result.Z = getAccelReg(chn, 0x37)<<8 |getAccelReg(chn, 0x36) ;
     return &result;
 };
