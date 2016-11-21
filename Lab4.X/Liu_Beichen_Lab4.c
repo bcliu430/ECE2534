@@ -11,7 +11,9 @@
 // Last modified:   11.20.2016
 //
 // Version:         ver.11-20-2016 create file, setup menu, set time countdown
-// 
+//                  ver.11-21-2016 setup target moving, score system and animition when hit target
+//                                 setup leds
+//                                 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //                                                                                                //
 //                                             README                                             //
@@ -52,11 +54,10 @@
 /*
  * TODO
  * 
- *  1. Object Moving
- *  2. Object hit with led
- *  3. display hit and miss on oled
- *  4. setup accel
- *  5. extra credit: if hit/total > 90% continue game, display the highest score after the game ends.
+ *  1. Object Moving fast -> probabaly using pixel
+ *  2. calculate miss
+ *  3. setup accel
+ *  4. extra credit: if hit/total > 90% continue game, display the highest score after the game ends.
  *  
  */
 
@@ -68,12 +69,19 @@ enum state sysState;
  *  Global Variable
  */
 static int CountDown = 90; // initial game time is 90 second
-static int a =97;          // initial clear pixel variable
-
+static int a = 8;          // initial clear pixel variable
+static int timer = 0;
+static int score = 0;
+static int miss = 0;
+static int pos_x = 0, pos_y = 0;
 BYTE blank[8] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 char blank_char = 0x00;
-BYTE doubleline[8] = {0x18, 0x18, 0x18, 0x18, 0x18, 0x18, 0x18, 0x18};
-char doubleline = 0x01;
+BYTE line[8] = {0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08};
+char line_char = 0x01;
+BYTE target[8] = {0x00, 0x18, 0x3c, 0x7e, 0x7e, 0x3c, 0x18, 0x00};
+char target_char = 0x02;
+BYTE hit[8] = { 0x18, 0x3c, 0x7e, 0xff, 0xff, 0x7e, 0x3c, 0x18};
+char hit_char = 0x03;
 #define DELAY 300
 
 
@@ -86,11 +94,22 @@ bool getBTN2();
 void delay(int num);
 void ClearPix(int xAixs);
 void countDown();
+void TarMove();
+void DrawBall();
+void Hit(pos_x, pos_y);
+void disp_score(int hit, int miss);
+void ledLit(int num);
 
 int main() { // main function
     
     init(); // initialize system
+//    while(1);
     while (1) {
+        if (INTGetFlag(INT_T2)){
+            INTClearFlag(INT_T2);
+            timer++;
+        }
+
         switch(sysState){
             case easy:
                 if(getBTN1()){
@@ -142,7 +161,7 @@ void init(){ //initialization
     OpenTimer2(T2_ON | T2_IDLE_CON | T2_SOURCE_INT | T2_PS_1_16 | T2_GATE_OFF, 624);
     INTClearFlag(INT_T2);
     // The period of Timer 3 is (256 * 39032)/(10 MHz) = 1 s (freq = 1 Hz)
-    OpenTimer3(T3_ON | T3_IDLE_CON | T3_SOURCE_INT | T3_PS_1_16 | T3_GATE_OFF, 624);
+    OpenTimer3(T3_ON | T3_IDLE_CON | T3_SOURCE_INT | T3_PS_1_64 | T3_GATE_OFF, 19530);
     INTSetVectorPriority(INT_TIMER_3_VECTOR, INT_PRIORITY_LEVEL_4);
     INTClearFlag(INT_T3);
     INTEnable(INT_T3, INT_ENABLED);    // The period of Timer 4 is 1 s (freq = 1 Hz)
@@ -203,42 +222,51 @@ void menu(int num){
 }
 
 void setLine() {
-    OledClearBuffer();
     OledMoveTo(0,3);
-    OledDrawRect(111,4);
+    OledLineTo(79,3);
     OledMoveTo(0,11);
-    OledDrawRect(111,12);
+    OledLineTo(79,11);
     OledMoveTo(0,19);
-    OledDrawRect(111,20);
-    OledUpdate();
-    
+    OledLineTo(79,19);
+    OledMoveTo(8,27);
+    OledDrawRect(97,28);
    
 }
 void game() {
+    char buf[2];
     OledClearBuffer();
-    OledMoveTo(8,27);
-    OledDrawRect(97,28);
+    setLine();
     while (CountDown > 0) {
         countDown();
+        TarMove();
+        disp_score(score, miss);
         OledUpdate();
+        LATGCLR =0XF000; // clear led
      
     }
 
     if(CountDown == 0) {
+        OledClearBuffer();
         OledSetCursor(2,0);
         OledPutString("GAME OVER");
         OledSetCursor(2,1);
         OledPutString("Your Score:");
+        OledSetCursor(7,2);
+        sprintf(buf, "%d",score);
+        OledPutString(buf);
         OledSetCursor(1,3);
         OledPutString("congratulations");
-
+        score = 0; // clear hit score
+        miss = 0; // clear miss score
+        pos_x = 0; // reset x pos
     }
     CountDown = 90; // reset countDown
-    a = 97;         // reset clear pixel 
+    a = 8;         // reset clear pixel 
     while(!getBTN2());
     menu(1);
     sysState = easy;
 }
+
 void ClearPix(int xAxis) {
     OledMoveTo(xAxis,27);
     OledClearPixel();
@@ -247,12 +275,50 @@ void ClearPix(int xAxis) {
     OledUpdate();
 }
 
+void TarMove(){
+    OledDefUserChar(target_char, target);
+    OledDefUserChar(line_char,line);
+    pos_y = timer%3;
+    if (pos_x > 9){
+        Hit(pos_x,pos_y);
+        // if (hit)   // user hit the target
+        ledLit(pos_y); // pos_y=0, led1 on; pos_y=1, led2 on, pos_y=2, led3 on 
+        // else       // user miss
+        // ledLit(3); led 4 on
+        score++;
+        pos_x = 0;
+    }
+    OledSetCursor(pos_x,pos_y);
+    OledPutChar(line_char);
+    pos_x++;
+    OledSetCursor(pos_x,pos_y);
+    OledPutChar(target_char);
+   
+}
+
+
+
+void Hit(pos_x, pos_y){
+    OledDefUserChar(hit_char,hit);
+    OledDefUserChar(blank_char,blank);
+    OledSetCursor(pos_x,pos_y);
+    OledPutChar(hit_char);
+    delay(DELAY);
+    OledSetCursor(pos_x,pos_y);
+    OledPutChar(blank_char);
+    
+}
+
 void countDown(){
     OledDefUserChar(blank_char, blank);
-    
-    char buf[2];    
-    if(INTGetFlag(INT_T4)) {
-        INTClearFlag(INT_T4);
+    int one_sec = 0;   
+    char buf[2];
+    while (one_sec<1000){
+    if(INTGetFlag(INT_T2)) {
+            INTClearFlag(INT_T2);
+            one_sec++;
+        }
+    }
         CountDown--;
         if (CountDown < 10) {
             OledSetCursor(14,3);
@@ -264,11 +330,24 @@ void countDown(){
         sprintf(buf,"%d",CountDown);
         OledPutString(buf);
         ClearPix(a);
-        a--;
-        }
+        a++;
+        
 }
 
+void disp_score(int score, int miss){
+    char buf[4];
+    OledSetCursor(13, 0);
+    sprintf(buf,"S:%d",score);
+    OledPutString(buf);
+    OledSetCursor(13, 1);
+    sprintf(buf,"M:%d",miss);
+    OledPutString(buf);
+}
 
+void ledLit(int num){
+    int led = num+1+11; // led0 is bit 12  
+    LATGSET = (1<< led);
+}
 
 /*
  *  delay function
