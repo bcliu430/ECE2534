@@ -16,27 +16,6 @@
 //                  ver.12-03-2016 setup ACL, configure double tap and twist, setup random number
 //                                 add extra credit          
 //                                 
-////////////////////////////////////////////////////////////////////////////////////////////////////
-//                                                                                                //
-//                                             README                                             //
-//                                                                                                // 
-//         This game is controled by button 1, button 2, and accel. In the menu list, use         //
-//         Button 1 to select up and down, and use button 2 to confirm.                           //
-//                                                                                                //
-//         In the game interface, you will hit the target using accel, left twist is used         //
-//         to hit the target on third line, and led1 will on if you hit. double tap is for        //
-//         second line and right twist is for the first line. if you miss, the forth led will     //
-//         flash indicates that you miss one. when time is over, it will display your score on    //
-//         Oled, push button2 to go back to the main interface.                                   //
-//                                                                                                //
-//         Extra Credit:                                                                          //
-//         I add the new feature for the game, whenever your hit rate                             // 
-//         hit/(hit+miss) is less than 50% you automatically lose the game, the oled will show    //
-//         that you lose the game.                                                                //
-//                                                                                                //
-//         Enjoy your game.                                                                       //
-//                                                                                                //
-////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 //
 #include <stdio.h>                      // for sprintf()
