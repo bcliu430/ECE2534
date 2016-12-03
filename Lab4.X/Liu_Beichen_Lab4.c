@@ -192,7 +192,7 @@ void init(){ //initialization
     OledPutString("   BEICHEN LIU   ");
     OledUpdate(); 
     
-    while (timeCount <= 500) { //delay for 5 second
+    while (timeCount <= 2000) { //delay for 5 second
         if (INTGetFlag(INT_T2)) {
             timeCount++;
             INTClearFlag(INT_T2);// Clear flag so we don't respond until it sets again
