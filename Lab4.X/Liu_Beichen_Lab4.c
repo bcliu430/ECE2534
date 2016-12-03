@@ -8,13 +8,13 @@
 //
 // Written by:      Beichen Liu 刘北辰
 //
-// Last modified:   11.20.2016
+// Last modified:   12.03.2016
 //
 // Version:         ver.11-20-2016 create file, setup menu, set time countdown
 //                  ver.11-21-2016 setup target moving, score system and animition when hit target
 //                                 setup leds
-//                  ver.12-03-2016 setup ACL, configure double tap and twist; setup random number
-//                                 
+//                  ver.12-03-2016 setup ACL, configure double tap and twist, setup random number
+//                                 add extra credit          
 //                                 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //                                                                                                //
@@ -22,11 +22,18 @@
 //                                                                                                // 
 //         This game is controled by button 1, button 2, and accel. In the menu list, use         //
 //         Button 1 to select up and down, and use button 2 to confirm.                           //
-//         
-//         In the game interface, you have 5 seconds to test your accel, left twist will 
-//         make the third line a circle which means you hit the "target", and led3 will on 
-//         while you right twist. double 
-//         
+//                                                                                                //
+//         In the game interface, you will hit the target using accel, left twist is used         //
+//         to hit the target on third line, and led1 will on if you hit. double tap is for        //
+//         second line and right twist is for the first line. if you miss, the forth led will     //
+//         flash indicates that you miss one. when time is over, it will display your score on    //
+//         Oled, push button2 to go back to the main interface.                                   //
+//                                                                                                //
+//         Extra Credit:                                                                          //
+//         I add the new feature for the game, whenever your hit rate                             // 
+//         hit/(hit+miss) is less than 50% you automatically lose the game, the oled will show    //
+//         that you lose the game.                                                                //
+//                                                                                                //
 //         Enjoy your game.                                                                       //
 //                                                                                                //
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -72,7 +79,7 @@ enum state sysState;
  */
 static int CountDown = 30; // initial game time is 90 second
 static int a = 8;          // initial clear pixel variable
-static int timer = 0;
+volatile unsigned int timer2 = 0;
 static int score = 0;
 static int miss = 0;
 static int pos_x = 4, pos_y = 0;
@@ -113,6 +120,7 @@ void readData();
 void game(int speed);
 void hitarea();
 void drawchar();
+void lose();
 
 int main() { // main function
     init(); // initialize system
@@ -165,6 +173,7 @@ void init(){ //initialization
     TRISBCLR = 0x0040;   
     ODCBCLR  = 0x0040;   
     LATBSET  = 0x0040;
+
     
     // The period of Timer 2 is (16 * 625)/(10 MHz) = 1 ms (freq = 10 Hz)
     OpenTimer2(T2_ON | T2_IDLE_CON | T2_SOURCE_INT | T2_PS_1_16 | T2_GATE_OFF, 624);
@@ -178,6 +187,9 @@ void init(){ //initialization
     INTEnable(INT_T3, INT_ENABLED);    // The period of Timer 4 is 1 s (freq = 1 Hz)
     OpenTimer4(T4_ON | T4_IDLE_CON | T4_SOURCE_INT | T4_PS_1_16 | T4_GATE_OFF, 624);
     INTClearFlag(INT_T4);
+
+
+
     
     // SPI and accel    
     initSPI(SPI_CHANNEL3,1024);
@@ -273,6 +285,7 @@ void game(int speed) {
     OledUpdate();
 
     while (CountDown > 0) {
+        timer2++;
         int y_axis = 0;
         y_axis = 8*pos_y+1;
 
@@ -318,8 +331,18 @@ void game(int speed) {
 
                 pos_x = 1;
                 pos_y = rand()%3;
+                pos_y = rand()%3;
+                pos_y = rand()%3;
+                pos_y = rand()%3;
+                pos_y = rand()%3;
+
+
                 
             }
+        if(score !=0 && miss !=0 && score <miss){
+            lose();
+            break;
+        }
 
 
 
@@ -342,13 +365,33 @@ void game(int speed) {
         score = 0; // clear hit score
         miss = 0; // clear miss score
         pos_x = 1; // reset x pos 
-        pos_y = timer%3;
+        pos_y = rand()%3;
     }
     CountDown = 30; // reset countDown
     a = 8;         // reset clear pixel 
     while(!getBTN2());
     menu(1);
     sysState = easy;
+}
+
+void lose(){
+        char buf[17];
+        OledClearBuffer();
+        OledSetCursor(2,0);
+        OledPutString("GAME OVER");
+        OledSetCursor(2,1);
+        OledPutString("Your lose");
+        OledSetCursor(7,2);
+        score = 0; // clear hit score
+        miss = 0; // clear miss score
+        pos_x = 1; // reset x pos 
+        pos_y = rand()%3;
+    CountDown = 30; // reset countDown
+    a = 8;         // reset clear pixel 
+    while(!getBTN2());
+    menu(1);
+    sysState = easy;
+    
 }
 
 
@@ -625,3 +668,6 @@ void initSPI(SpiChannel chn, unsigned int srcClkDiv) {
                SPI_OPEN_ENHBUF, \
                srcClkDiv);
 }
+
+
+
