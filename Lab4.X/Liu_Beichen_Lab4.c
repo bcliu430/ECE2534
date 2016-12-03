@@ -13,6 +13,8 @@
 // Version:         ver.11-20-2016 create file, setup menu, set time countdown
 //                  ver.11-21-2016 setup target moving, score system and animition when hit target
 //                                 setup leds
+//                  ver.12-03-2016 setup ACL, configure double tap and twist; setup random number
+//                                 
 //                                 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //                                                                                                //
@@ -68,48 +70,54 @@ enum state sysState;
 /*
  *  Global Variable
  */
-static int CountDown = 90; // initial game time is 90 second
+static int CountDown = 30; // initial game time is 90 second
 static int a = 8;          // initial clear pixel variable
 static int timer = 0;
 static int score = 0;
 static int miss = 0;
-static int pos_x = 0, pos_y = 0;
+static int pos_x = 4, pos_y = 0;
+static short y=0; // y axis from accel
+static int one_sec = 0;   
+
 BYTE blank[8] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 char blank_char = 0x00;
-BYTE line[8] = {0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08};
-char line_char = 0x01;
-BYTE target[8] = {0x00, 0x18, 0x3c, 0x7e, 0x7e, 0x3c, 0x18, 0x00};
-char target_char = 0x02;
-BYTE hit[8] = { 0x18, 0x3c, 0x7e, 0xff, 0xff, 0x7e, 0x3c, 0x18};
-char hit_char = 0x03;
+
+BYTE L[8] = {0x00, 0x40, 0x40, 0x40, 0x40, 0x40, 0x7C, 0x00};
+char L_char = 0x10;
+char D[8] = {0x00, 0x70, 0x48, 0x44, 0x44, 0x48, 0x70, 0x00};
+char D_char = 0x11;
+char R[8] = {0x00, 0x78, 0x48, 0x70, 0x60, 0x50, 0x48, 0x00};
+char R_char = 0x12;
 #define DELAY 300
 
+static short axis [6]; // 2 bit for each axis x, y, z;
+static int source;
+bool doubletap;
 
 // function declaraction
 void init();
-void setLine();
 void Menu(int num);
 bool getBTN1();
 bool getBTN2();
-void delay(int num);
 void ClearPix(int xAixs);
 void countDown();
-void TarMove();
-void DrawBall();
-void Hit(pos_x, pos_y);
 void disp_score(int hit, int miss);
-void ledLit(int num);
+void initAccelerometer(SpiChannel chn);
+void setAccelReg(SpiChannel chn, unsigned int address, unsigned int data);
+int  getAccelReg(SpiChannel chn, unsigned int address);
+void getAccelData(SpiChannel chn, short accelData[]);
+bool RightTwist();
+bool LeftTwist();
+void initSPI(SpiChannel chn, unsigned int srcClkDiv);
+void readData();
+void game(int speed);
+void hitarea();
+void drawchar();
 
 int main() { // main function
-    
     init(); // initialize system
-//    while(1);
+          
     while (1) {
-        if (INTGetFlag(INT_T2)){
-            INTClearFlag(INT_T2);
-            timer++;
-        }
-
         switch(sysState){
             case easy:
                 if(getBTN1()){
@@ -117,7 +125,7 @@ int main() { // main function
                     sysState = hard;
                 }
                 else if(getBTN2()){
-                    game();
+                    game(1);
                 }
                 else
                     sysState = sysState;
@@ -128,7 +136,7 @@ int main() { // main function
                     sysState = easy;
                 }
                 else if(getBTN2()){
-                    game();
+                    game(2);
                 }
                 else
                     sysState = sysState;
@@ -149,6 +157,7 @@ void init(){ //initialization
     TRISGCLR = 0xF000;   // For LEDs: configure PortG pin for output
     ODCGCLR  = 0xF000;   // For LEDs: configure as normal output (not open drain)
     LATGSET  = 0xf000;   // all LEDs are on for 5 seconds;
+
     // initialize functions
     DelayInit();
     OledInit();
@@ -159,18 +168,23 @@ void init(){ //initialization
     
     // The period of Timer 2 is (16 * 625)/(10 MHz) = 1 ms (freq = 10 Hz)
     OpenTimer2(T2_ON | T2_IDLE_CON | T2_SOURCE_INT | T2_PS_1_16 | T2_GATE_OFF, 624);
+    INTSetVectorPriority(INT_TIMER_2_VECTOR, INT_PRIORITY_LEVEL_4);
     INTClearFlag(INT_T2);
+    INTEnable(INT_T2, INT_ENABLED);
     // The period of Timer 3 is (256 * 39032)/(10 MHz) = 1 s (freq = 1 Hz)
     OpenTimer3(T3_ON | T3_IDLE_CON | T3_SOURCE_INT | T3_PS_1_64 | T3_GATE_OFF, 19530);
     INTSetVectorPriority(INT_TIMER_3_VECTOR, INT_PRIORITY_LEVEL_4);
     INTClearFlag(INT_T3);
     INTEnable(INT_T3, INT_ENABLED);    // The period of Timer 4 is 1 s (freq = 1 Hz)
-    OpenTimer4(T4_ON | T4_IDLE_CON | T4_SOURCE_INT | T4_PS_1_256 | T4_GATE_OFF, 39061);
+    OpenTimer4(T4_ON | T4_IDLE_CON | T4_SOURCE_INT | T4_PS_1_16 | T4_GATE_OFF, 624);
     INTClearFlag(INT_T4);
-
-
-    //end ADC initialization
     
+    // SPI and accel    
+    initSPI(SPI_CHANNEL3,1024);
+    initAccelerometer(SPI_CHANNEL3);
+    TRISESET = 1<<8;
+    PORTESET = 1<<8;
+   //*/ 
     unsigned int timeCount=0;
     
     
@@ -196,8 +210,8 @@ void init(){ //initialization
     }
     LATGCLR  = 0xf000; // testing LEDs finishes
     OledClearBuffer();
-//    sysState = easy;
-//    menu(1); 
+    sysState = easy;
+    menu(1); 
 
 }
 
@@ -222,27 +236,96 @@ void menu(int num){
 }
 
 void setLine() {
-    OledMoveTo(0,3);
-    OledLineTo(79,3);
-    OledMoveTo(0,11);
-    OledLineTo(79,11);
-    OledMoveTo(0,19);
-    OledLineTo(79,19);
+    OledMoveTo(0,0);
+    OledLineTo(0,24);
+    OledMoveTo(0,0);
+    OledLineTo(71,0);
+    OledMoveTo(0,8);
+    OledLineTo(71,8);
+    OledMoveTo(0,16);
+    OledLineTo(71,16);
+    OledMoveTo(0,24);
+    OledLineTo(71,24);
+    
+    // count down
     OledMoveTo(8,27);
     OledDrawRect(97,28);
-   
+
+  
 }
-void game() {
+
+void hitarea(){
+        // hit area
+    OledMoveTo(72,0);
+    OledDrawRect(79,7);
+    OledMoveTo(72,8);
+    OledDrawRect(79,15);
+    OledMoveTo(72,16);
+    OledDrawRect(79,23); 
+}
+
+
+void game(int speed) {
+    float percent;
     char buf[2];
     OledClearBuffer();
     setLine();
+    OledUpdate();
+
     while (CountDown > 0) {
+        int y_axis = 0;
+        y_axis = 8*pos_y+1;
+
+        
+        drawchar(pos_x,y_axis);
         countDown();
-        TarMove();
+        hitarea();
+
+        clearchar(pos_x,y_axis);
+
+        pos_x = pos_x+2*speed;
+        drawchar(pos_x,y_axis);
+
+            if (pos_x >=72 && pos_x<=79){
+                getAccelData(SPI_CHANNEL3, axis);
+                y = axis[2] | axis[3] << 8;
+ 
+                source = getAccelReg(3,0x30);
+                if (source &0x20) doubletap = TRUE;
+                else doubletap = FALSE;
+ 
+                if( (pos_y == 0) && (RightTwist()) ) { 
+                    LATGSET = 0x4000;
+                    score++;
+                }
+                else if  ( (pos_y == 1) && (doubletap) ) { 
+                    LATGSET = 0x2000;
+                    score++;
+                }
+                
+                else if( (pos_y == 2) && (LeftTwist()) ) { 
+                    LATGSET = 0x1000;
+                    score++;
+                }
+                
+                else{ 
+                    LATGSET = 0x8000;
+                    miss++; 
+                }
+
+                
+                clearchar(pos_x,y_axis);
+
+                pos_x = 1;
+                pos_y = rand()%3;
+                
+            }
+
+
+
         disp_score(score, miss);
         OledUpdate();
         LATGCLR =0XF000; // clear led
-     
     }
 
     if(CountDown == 0) {
@@ -258,13 +341,95 @@ void game() {
         OledPutString("congratulations");
         score = 0; // clear hit score
         miss = 0; // clear miss score
-        pos_x = 0; // reset x pos
+        pos_x = 1; // reset x pos 
+        pos_y = timer%3;
     }
-    CountDown = 90; // reset countDown
+    CountDown = 30; // reset countDown
     a = 8;         // reset clear pixel 
     while(!getBTN2());
     menu(1);
     sysState = easy;
+}
+
+
+void drawchar(int pos_x, int pos_y){
+    int x1,x2,x3;
+    int y1,y2,y3,y4,y5,y6;
+    
+    x1 = pos_x;
+    x2 = pos_x+2;
+    x3 = pos_x+3;
+    
+    y1 = pos_y;
+    y2 = pos_y+1;
+    y3 = pos_y+2;
+    y4 = pos_y+3;
+    y5 = pos_y+4;
+    y6 = pos_y+5;
+
+    
+    OledMoveTo(x1,y1);
+    OledDrawPixel();
+    OledMoveTo(x2,y1);
+    OledDrawPixel();
+    OledMoveTo(x1,y2);
+    OledDrawPixel();
+    OledMoveTo(x3,y2);
+    OledDrawPixel();
+    OledMoveTo(x3,y3);
+    OledDrawPixel();
+    OledMoveTo(x3,y4);
+    OledDrawPixel();
+    OledMoveTo(x1,y5);
+    OledDrawPixel();
+    OledMoveTo(x3,y5);
+    OledDrawPixel();
+    OledMoveTo(x1,y6);
+    OledDrawPixel();
+    OledMoveTo(x2,y6);
+    OledDrawPixel();
+
+
+}
+
+void clearchar(int pos_x, int pos_y){
+    int x1,x2,x3;
+    int y1,y2,y3,y4,y5,y6;
+    
+    x1 = pos_x;
+    x2 = pos_x+2;
+    x3 = pos_x+3;
+    
+    y1 = pos_y;
+    y2 = pos_y+1;
+    y3 = pos_y+2;
+    y4 = pos_y+3;
+    y5 = pos_y+4;
+    y6 = pos_y+5;
+
+    
+    OledMoveTo(x1,y1);
+    OledClearPixel();
+    OledMoveTo(x2,y1);
+    OledClearPixel();
+    OledMoveTo(x1,y2);
+    OledClearPixel();
+    OledMoveTo(x3,y2);
+    OledClearPixel();
+    OledMoveTo(x3,y3);
+    OledClearPixel();
+    OledMoveTo(x3,y4);
+    OledClearPixel();
+    OledMoveTo(x1,y5);
+    OledClearPixel();
+    OledMoveTo(x3,y5);
+    OledClearPixel();
+    OledMoveTo(x1,y6);
+    OledClearPixel();
+    OledMoveTo(x2,y6);
+    OledClearPixel();
+
+
 }
 
 void ClearPix(int xAxis) {
@@ -275,51 +440,21 @@ void ClearPix(int xAxis) {
     OledUpdate();
 }
 
-void TarMove(){
-    OledDefUserChar(target_char, target);
-    OledDefUserChar(line_char,line);
-    pos_y = timer%3;
-    if (pos_x > 9){
-        Hit(pos_x,pos_y);
-        // if (hit)   // user hit the target
-        ledLit(pos_y); // pos_y=0, led1 on; pos_y=1, led2 on, pos_y=2, led3 on 
-        // else       // user miss
-        // ledLit(3); led 4 on
-        score++;
-        pos_x = 0;
-    }
-    OledSetCursor(pos_x,pos_y);
-    OledPutChar(line_char);
-    pos_x++;
-    OledSetCursor(pos_x,pos_y);
-    OledPutChar(target_char);
-   
-}
-
-
-
-void Hit(pos_x, pos_y){
-    OledDefUserChar(hit_char,hit);
-    OledDefUserChar(blank_char,blank);
-    OledSetCursor(pos_x,pos_y);
-    OledPutChar(hit_char);
-    delay(DELAY);
-    OledSetCursor(pos_x,pos_y);
-    OledPutChar(blank_char);
-    
-}
-
 void countDown(){
     OledDefUserChar(blank_char, blank);
-    int one_sec = 0;   
     char buf[2];
-    while (one_sec<1000){
-    if(INTGetFlag(INT_T2)) {
-            INTClearFlag(INT_T2);
+    if(INTGetFlag(INT_T4)) {
+            INTClearFlag(INT_T4);
             one_sec++;
         }
-    }
+    if (one_sec == 10){
         CountDown--;
+        ClearPix(a);
+        ClearPix(a+1);
+        ClearPix(a+2);
+        a = a+3;
+        one_sec =0;
+    }
         if (CountDown < 10) {
             OledSetCursor(14,3);
             OledPutChar(blank_char);
@@ -327,43 +462,35 @@ void countDown(){
         }
         else 
             OledSetCursor(14,3);
+        
         sprintf(buf,"%d",CountDown);
         OledPutString(buf);
-        ClearPix(a);
-        a++;
+
+     
+    OledUpdate();
         
 }
 
 void disp_score(int score, int miss){
     char buf[4];
-    OledSetCursor(13, 0);
+    int percent;
+
+    OledSetCursor(12, 0);
     sprintf(buf,"S:%d",score);
     OledPutString(buf);
-    OledSetCursor(13, 1);
+    OledSetCursor(12, 1);
     sprintf(buf,"M:%d",miss);
     OledPutString(buf);
+    OledDefUserChar(L_char, L);
+    OledDefUserChar(D_char, D);
+    OledDefUserChar(R_char, R);
+    OledSetCursor(10,0);
+    OledPutChar(R_char);
+    OledSetCursor(10,1);
+    OledPutChar(D_char);
+    OledSetCursor(10,2);
+    OledPutChar(L_char);
 }
-
-void ledLit(int num){
-    int led = num+1+11; // led0 is bit 12  
-    LATGSET = (1<< led);
-}
-
-/*
- *  delay function
- */ 
-
-void delay(int num) {
-    unsigned int time = 0;
-    while(time < num) {
-        if(INTGetFlag(INT_T2)){
-            time++;
-            INTClearFlag(INT_T2);
-        }
-
-    }
-}
-
 
 bool getBTN1() {
     enum Button1Position {UP, DOWN}; // Possible states of BTN1
@@ -421,4 +548,80 @@ bool getBTN2() {
         return TRUE; // debounced 0-to-1 transition has been detected
     
     return FALSE;    // 0-to-1 transition not detected
+}
+
+void initAccelerometer(SpiChannel chn) {
+    setAccelReg(chn, 0x2C, 0x06); // addr_bw_rate
+    setAccelReg(chn, 0x31, 0x2A); // addr_data_format
+    setAccelReg(chn, 0x2D, 0x08); // addr_power_ctl
+    setAccelReg(chn, 0x2E, 0x20); // INT_ENABLE
+    setAccelReg(chn, 0x2F ,0x20); // INT_MAP
+    setAccelReg(chn, 0x2A, 0x01);
+    setAccelReg(chn, 0x1D ,0x30); // THRESH_TAP
+    setAccelReg(chn, 0x21 ,0x10); // DUR
+    setAccelReg(chn, 0x22 ,0x10); // latency time
+    setAccelReg(chn, 0x23 ,0x90); // window register
+    setAccelReg(chn, 0x2A ,0x01); // Z axis
+}
+
+void setAccelReg(SpiChannel chn, unsigned int address, unsigned int data) {
+    SpiChnPutC (chn, address);
+    SpiChnPutC (chn, data);
+    SpiChnGetC (chn);
+    SpiChnGetC (chn);
+}
+
+int getAccelReg(SpiChannel chn, unsigned int address) {
+    SpiChnPutC(chn, 0x80 + address);
+    SpiChnPutC(chn, 0);
+    SpiChnGetC(chn);
+    int value = SpiChnGetC(chn);
+    
+    return value;
+}
+
+void getAccelData(SpiChannel chn, short accelData[]) {
+    SpiChnPutC(chn,(0x80 | 0x40 | 0x32));
+    SpiChnPutC(chn,0);
+    SpiChnPutC(chn,0);
+    SpiChnPutC(chn,0);
+    SpiChnPutC(chn,0);
+    SpiChnPutC(chn,0);
+    SpiChnPutC(chn,0);
+    SpiChnGetC(chn);
+    int i;
+    for(i = 0; i < 6; i++) 
+        accelData[i] = SpiChnGetC(chn);
+
+}
+
+bool RightTwist(){
+    short thresh = -100;
+    if (y < thresh){
+        DelayMs(200);
+        if (y < 100)   return TRUE;
+        return FALSE;
+    }
+
+
+}
+
+bool LeftTwist(){
+    short thresh =100;
+    if (y > thresh){
+        DelayMs(200);
+        if (y > 100)   return TRUE;
+        return FALSE;
+    }
+}
+
+
+void initSPI(SpiChannel chn, unsigned int srcClkDiv) {
+    SpiChnOpen(chn, \
+               SPI_OPEN_MSSEN | \
+               SPI_OPEN_MSTEN | \
+               SPI_OPEN_MODE8 | \
+               SPI_OPEN_CKP_HIGH | \
+               SPI_OPEN_ENHBUF, \
+               srcClkDiv);
 }
