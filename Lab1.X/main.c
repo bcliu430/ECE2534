@@ -1,3 +1,14 @@
+////////////////////////////////////////////////////////////////////////////////////
+// ECE 2534:        Lab 1
+// File name:       main.c
+// Description:     Test the Digilent board by writing a short message to the OLED.
+//                  Also display a counter that updates every 100 milliseconds.
+// Resources:       main.c uses Timer2 to measure elapsed time.
+//					delay.c uses Timer1 to provide delays with increments of 1 ms.
+//					PmodOLED.c uses SPI1 for communication with the OLED.
+// Written by:      Patterson, Plassmann, Abbott
+// Last modified:   8/30/2016
+
 #include <stdio.h>                      // for sprintf()
 #include <plib.h>                       // Peripheral Library
 #include "PmodOLED.h"
@@ -31,9 +42,9 @@ int main()
     unsigned int timer2_current=0, timer2_previous=0;
     
     // Initialize GPIO for BTN1 and LED1
-    TRISGSET = 0xC0;     // For BTN1: configure PortG bit for input
-    TRISGCLR = 0xF000;   // For LED1: configure PortG pin for output
-    ODCGCLR  = 0xF000;   // For LED1: configure as normal output (not open drain)
+    TRISGSET = 0xC0;     // For BTN 1 and 2: set pin 6 and 7 to 1 as input 
+    TRISGCLR = 0xF000;   // For LEDs: configure PortG pin for output
+    ODCGCLR  = 0xF000;   // For LEDs: configure as normal output (not open drain)
 
     // Initialize PmodOLED, also Timer1 and SPI1
     DelayInit();
@@ -47,36 +58,21 @@ int main()
     OledSetCursor(0, 0);          // upper-left corner of display
     OledPutString("ECE 2534");
     OledSetCursor(0, 2);          // column 0, row 2 of display
-    OledPutString("JiaJun Tan");
+    OledPutString("Beichen Liu");
     OledUpdate();
 
     // Main processing loop
     while (1)
     {
         // Poll BTN1, and update LED1 to indicate the state of BTN1
-        if( PORTG & (1 << 6) && PORTG & (1 << 6))    // Is BTN1 being pressed?
-        {
-            LATGCLR = 1 << 12;    // LED1 off
-            LATGCLR = 1 << 13;
-            LATGCLR = 1 << 14;
-            LATGCLR = 1 << 15;
-        } 
-
-        if( PORTG & (1 << 6) )    // Is BTN1 being pressed?
-        {
-            LATGSET = 1 << 12;    // LED1 on
-            LATGSET = 1 << 13;
-            LATGSET = 1 << 14;
-            LATGSET = 1 << 15;
-        }
-        else
-        {
-            LATGCLR = 1 << 12;    // LED1 off
-            LATGCLR = 1 << 13;
-            LATGCLR = 1 << 14;
-            LATGCLR = 1 << 15;
-        }
-
+        if(      (PORTG & (1 << 6)) && ( PORTG & (1 << 7)) )// Is BTN1 and BTN2 being pressed?
+            LATGCLR = 0xF000;
+        
+        else if((PORTG & (1 << 6)) || ( PORTG & (1 << 7)) )  // Is BTN1 xor BTN2 being pressed?
+            LATGSET = 0xF000;    // LEDs on 
+         
+        else 
+            LATGCLR = 0xF000;
         
         // Poll Timer 2, and update display if Timer 2 has rolled over
         timer2_current = ReadTimer2();
@@ -97,5 +93,4 @@ int main()
     
    return EXIT_SUCCESS;           // This return should never occur
 } // end main  
-
 
